@@ -1,0 +1,94 @@
+Created At: 2026-06-07T07:46:43Z
+Completed At: 2026-06-07T07:46:43Z
+File Path: `file:///c:/Users/HP/OneDrive/Desktop/dental%20software/src/components/PatientProfileView.jsx`
+Total Lines: 86
+Total Bytes: 3206
+Showing lines 1 to 86
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import React, { useState, useEffect } from 'react'
+2: import { useLocation } from 'react-router-dom'
+3: import styles from './SearchPatient.module.css'
+4: import ClinicalNotesModal from './ClinicalNotesModal'
+5: import TreatmentModal from './TreatmentModal'
+6: import PatientProfileAppointment from './PatientProfileAppointment'
+7: import PatientProfilePrescription from './PatientProfilePrescription'
+8: import PatientProfileInvoice from './PatientProfileInvoice'
+9: 
+10: const TABS = [
+11:   'General', 'Appointment', 'Clinic Notes', 'Treatments',
+12:   'Prescription', 'Invoice', 'Payment', 'Attachment', 'Sms', 'E-mail', 'Laboratory'
+13: ]
+14: 
+15: function getInitials(name) {
+16:   if (!name) return '?'
+17:   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+18: }
+19: 
+20: export default function PatientProfileView({
+21:   viewPatient, profile, profileLoading, patientName, patientPhone,
+22:   closeProfile, refreshProfile, onNavigate
+23: }) {
+24:   const location = useLocation()
+25:   const [activeTab, setActiveTab] = useState(location.state?.initialTab || 'general')
+26:   const [showNotes, setShowNotes] = useState(null)
+27:   const [showTreatment, setShowTreatment] = useState(null)
+28:   const [showSuccess, setShowSuccess] = useState(false)
+29: 
+30:   // Sync initial tab when location state changes
+31:   useEffect(() => {
+32:     if (location.state?.initialTab) {
+33:       setActiveTab(location.state.initialTab)
+34:     }
+35:   }, [location.state?.initialTab])
+36: 
+37:   const totalBalance = parseFloat(profile?.total_balance
+38:                           ))
+39:                         )}
+40:                       </tbody>
+41:                     </table>
+42:                   </div>
+43:                 </div>
+44:               )}
+45: 
+46:               {/* ── PLACEHOLDERS ── */}
+47:               {['attachment', 'sms', 'e-mail', 'laboratory'].includes(activeTab) && (
+48:                 <div className={styles.treatmentsTabBody}>
+49:                   <div style={{ background: '#fff', borderRadius: 8, border: '1px dashed #cbd5e1', padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+50:                     <div style={{ fontSize: 32, marginBottom: 12 }}>🚧</div>
+51:                     <p style={{ margin: 0, fontWeight: 600 }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} module coming soon.</p>
+52:                   </div>
+53:                 </div>
+54:               )}
+55:             </>
+56:           )}
+57:         </div>
+58:       </div>
+59: 
+60:       {/* ── Modals that sit on top ── */}
+61:       {showNotes && (
+62:         <ClinicalNotesModal
+63:           appointmentId={showNotes === 'new' ? null : showNotes}
+64:           patientId={viewPatient.id}
+65:           patientName={patientName}
+66:           onClose={() => { setShowNotes(null); refreshProfile() }}
+67:         />
+68:       )}
+69:       {showTreatment && (
+70:         <TreatmentModal
+71:           patientId={viewPatient.id}
+72:           patientName={patientName}
+73:           appointmentId={showTreatment === 'new' ? null : showTreatment}
+74:           onClose={() => setShowTreatment(null)}
+75:           onSaved={() => {
+76:             refreshProfile()
+77:             setActiveTab('treatments')
+78:             setShowSuccess(true)
+79:             setTimeout(() => setShowSuccess(false), 3000)
+80:           }}
+81:         />
+82:       )}
+83:     </section>
+84:   )
+85: }
+86: 
+The above content shows the entire, complete file contents of the requested file.

@@ -1,0 +1,146 @@
+.hms-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
+
+.hms-modal {
+  background: rgba(255, 255, 255, 0.03);
+  width: 800px;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  position: relative;
+  padding: 30px;
+}
+
+.hms-close-x {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+}
+
+.hms-title-main {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.dentition-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.hms-select-all {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.hms-select-all input {
+  margin-left: 5px;
+}
+
+.hms-chart-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hms-row {
+  display: flex;
+  align-items: flex-end; /* Align numbers */
+}
+
+.hms-divider {
+  width: 1px;
+  height: 50px;
+  background: transparent;
+  margin: 0 10px;
+}
+
+.exact-item {
+  display: flex;
+  flex-direction: column;
+  items-center: center;
+  width: 25px;
+  margin: 0 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.exact-item:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.exact-selected {
+  outline: 1px solid #00bcd4;
+  background: rgba(0, 188, 212, 0.1);
+}
+
+.exact-sprite-img {
+  width: 24px;
+  height: 50px;
+  background-image: url('/tooth_chart.png');
+  background-size: 800% 400%;
+}
+
+/* Pediatric yellowish effect */
+.exact-item.ped .exact-sprite-img {
+  filter: sepia(0.6) saturate(1.5) hue-rotate(50deg) brightness(1.1);
+}
+
+.exact-number-label {
+  font-size: 10px;
+  color: #333;
+  text-align: center;
+  margin-top: 5px;
+}
+
+.hms-footer {
+  margin-top: 35px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.hms-footer button {
+  padding: 8px 30px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid #ddd;
+}
+
+.hms-btn-close {
+  background: rgba(255, 255, 255, 0.03);
+  color: #666;
+}
+
+.hms-btn-save {
+  background: #00bcd4;
+  color: #fff;
+  border: none !important;
+}
+
+.hms-btn-save:hover {
+  background: #00acc1;
+}

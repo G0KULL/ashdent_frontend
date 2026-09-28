@@ -1,0 +1,29 @@
+Created At: 2026-06-07T07:53:47Z
+Tool is running as a background task with task id: f9b26ebf-3f45-48c5-8a3a-f44199cc2558/task-180
+Task Description: py -c "
+import json
+for fname in ['DentalLabSettings.jsx', 'PurchaseEntry.jsx']:
+    found = False
+    with open(r'C:\Users\HP\.gemini\antigravity-ide\brain\f9b26ebf-3f45-48c5-8a3a-f44199cc2558\.system_generated\logs\transcript.jsonl', 'r', encoding='utf-8') as f:
+        for line in f:
+            if fname in line and 'export default function' in line:
+                data = json.loads(line)
+                content = str(data)
+                if 'export default function' in content:
+                    print(f'Found {fname} in step:', data.get('step_index'))
+                    if 'content' in data:
+                       with open(f'recovered_{fname}.txt', 'w', encoding='utf-8') as out:
+                           out.write(data['content'])
+                       found = True
+                       break
+                    elif 'output' in data:
+                       with open(f'recovered_{fname}.txt', 'w', encoding='utf-8') as out:
+                           out.write(data['output'])
+                       found = True
+                       break
+    if not found:
+        print(f'{fname} Not found')
+    else:
+        print(f'{fname} Recovered')
+"
+Task logs are available at: file:///C:/Users/HP/.gemini/antigravity-ide/brain/f9b26ebf-3f45-48c5-8a3a-f44199cc2558/.system_generated/tasks/task-180.log

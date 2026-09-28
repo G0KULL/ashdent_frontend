@@ -1,0 +1,194 @@
+/* ═══════════════════════════════════════════════
+   StatsCards — Clean White Light Theme
+   ═══════════════════════════════════════════════ */
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 200px));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(140px, 200px));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease-out both;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Card Top Row ── */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e7ff !important;
+  color: #3b82f6 !important;
+  border: none;
+}
+
+/* ── Trend Badge ── */
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.trendUp {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.trendGood {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.trendNeutral {
+  background: #ffffff;
+  color: #64748b;
+}
+
+/* ── Body ── */
+.body {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.prefix {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4f46e5;
+  margin-right: 2px;
+  vertical-align: top;
+  line-height: 1.2;
+}
+
+.count {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  display: inline;
+  letter-spacing: -0.5px;
+}
+
+.label {
+  font-size: 11px;
+  color: #475569;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ── Footer ── */
+.footer {
+  margin-top: auto;
+}
+
+.miniBar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.miniBarFill {
+  height: 100%;
+  border-radius: 99px;
+  width: var(--w, 0%);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+  background: linear-gradient(90deg, #4f46e5, #0ea5e9);
+}
+
+.sub {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Chips ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.redChip {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.tealChip {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

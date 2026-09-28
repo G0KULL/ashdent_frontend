@@ -1,0 +1,106 @@
+Created At: 2026-06-07T07:53:30Z
+Completed At: 2026-06-07T07:53:30Z
+File Path: `file:///c:/Users/HP/OneDrive/Desktop/dental%20software/src/components/DentalLabSettings.jsx`
+Total Lines: 97
+Total Bytes: 3193
+Showing lines 1 to 97
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import React, { useState, useEffect } from 'react';
+2: import styles from './GeneralSettings.module.css'; // Reusing GeneralSettings styles for consistency
+3: 
+4: export default function DentalLabSettings() {
+5:   const [activeTab, setActiveTab] = useState('Dental work');
+6:   const [loading, setLoading] = useState(false);
+7:   
+8:   // Dental Work State
+9:   const [works, setWorks] = useState([]);
+10:   const [workForm, setWorkForm] = useState({
+11:     name: '',
+12:     shade: '',
+13:     work_type: '',
+14:     alloy_type: '',
+15:     price: 0
+16:   });
+17: 
+18:   // Laboratory State
+19:   const [laboratories, setLaboratories] = useState([]);
+20:   const [labForm, setLabForm] = useState({
+21:     name: '',
+22:     phone: '',
+23:     email: '',
+24:     address: ''
+25:   });
+26: 
+27:   useEffect(() => {
+28:     fetchWorks();
+29:     fetchLaboratories();
+30:   }, []);
+31: 
+32:   const fetchWorks = async () => {
+33:     try {
+34:       const res = await fetch('http://127.0.0.1:8000/api/settings/dental-lab-work/');
+35:       const data = await res.json();
+36:       setWorks(data);
+37:     } catch (e) { console.error(e); }
+38:   };
+39: 
+40:   const fetchLaboratories = async () => {
+41:     try {
+42:       const res = await fetch('http://127.0.0.1:8000/api/settings/dental-laboratories/');
+43:       const data = await res.json();
+44:       setLaboratories(data);
+45:     } catch (e) { console.error(e); }
+46:   };
+47: 
+48:   const handleWorkSave = async () => {
+49:     if (!workForm.name) return;
+50:     set
+<truncated 30 bytes>
+
+52:       const r
+53:                       onChange={e => setLabForm({...labForm, address: e.target.value})}
+54:                       placeholder="Address"
+55:                       style={{ minHeight: 80 }}
+56:                     />
+57:                   </div>
+58: 
+59:                   <button className={styles.saveBtn} onClick={handleLabSave} disabled={loading} style={{ width: '100%' }}>
+60:                     {loading ? 'Saving...' : '💾 Save'}
+61:                   </button>
+62:                 </div>
+63: 
+64:                 <div className={styles.sideTable}>
+65:                   <h3 style={{ margin: '0 0 16px', fontSize: 15, color: 'var(--slate-900)', fontWeight: 600 }}>List All Laboratories</h3>
+66:                   <table className={styles.table}>
+67:                     <thead>
+68:                       <tr>
+69:                         <th style={{ width: 80 }}>Action</th>
+70:                         <th>Name</th>
+71:                         <th>Phone</th>
+72:                         <th>Status</th>
+73:                       </tr>
+74:                     </thead>
+75:                     <tbody>
+76:                       {laboratories.map((l, i) => (
+77:                         <tr key={i}>
+78:                           <td>
+79:                             <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => deleteLab(l.id)}>🗑️</button>
+80:                           </td>
+81:                           <td>{l.name}</td>
+82:                           <td>{l.phone}</td>
+83:                           <td><span className={styles.statusBadge}>Active</span></td>
+84:                         </tr>
+85:                       ))}
+86:                     </tbody>
+87:                   </table>
+88:                 </div>
+89:               </div>
+90:             </div>
+91:           )}
+92:         </div>
+93:       </div>
+94:     </div>
+95:   );
+96: }
+97: 
+The above content shows the entire, complete file contents of the requested file.
