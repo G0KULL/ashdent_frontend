@@ -1,0 +1,560 @@
+/* ConsultationPage.module.css - Tab-based Premium EMR SaaS Dashboard */
+:root {
+  --primary: #14B8A6; /* Teal */
+  --primary-hover: #0F766E;
+  --secondary: #0284C7; /* Blue */
+  --emerald: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  
+  --bg-main: #F4F7F9; /* Very light cool gray */
+  --bg-card: #FFFFFF;
+  --bg-hover: #F8FAFC;
+  --bg-active: #EAF7FF;
+  
+  --text-dark: #0F172A;
+  --text-normal: #334155;
+  --text-muted: #64748B;
+  
+  --border-light: #E2E8F0;
+  --border-focus: #14B8A6;
+  
+  --radius-card: 12px; /* Soft 12px rounding */
+  --radius-btn: 8px;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-main);
+  color: var(--text-normal);
+  font-family: 'Inter', -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* LEFT SIDEBAR */
+.leftSidebar {
+  width: 250px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.logoArea {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-light);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.menuList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-btn);
+  color: var(--text-normal);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.menuItem:hover {
+  background: var(--bg-hover);
+}
+
+.menuItem.active {
+  background: var(--primary);
+  color: white;
+}
+
+.menuItem span {
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.sidebarBottom {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.sidebarCard {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-btn);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.sidebarCard h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* MAIN CONTENT AREA */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* TOP HEADER */
+.topHeader {
+  height: 60px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 40;
+}
+
+.headerLeft, .headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.searchInput {
+  padding: 8px 12px 8px 36px;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  background: var(--bg-hover) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>') no-repeat 10px center;
+  width: 250px;
+  font-size: 13px;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--primary);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(20,184,166,0.1);
+}
+
+/* PATIENT HEADER CARD */
+.patientHeader {
+  background: var(--bg-card);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-light);
+  z-index: 39;
+}
+
+.patientProfileInfo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.patientAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-active);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  border: 2px solid var(--primary);
+}
+
+.patientDetails h1 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  color: var(--text-dark);
+}
+
+.patientMeta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.patientMeta span strong {
+  color: var(--text-normal);
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badgeAlert { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+.badgeCase { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+.badgeBalance { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+
+.patientActions {
+  display: flex;
+  gap: 10px;
+}
+
+.btnSecondary {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--border-light);
+  color: var(--text-normal);
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnSecondary:hover {
+  background: var(--bg-hover);
+  border-color: #94A3B8;
+}
+
+/* CASE HEADER */
+.caseHeader {
+  background: var(--bg-hover);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+}
+
+.caseTitle {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+/* NAVIGATION TABS */
+.tabsContainer {
+  display: flex;
+  background: var(--bg-card);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabsContainer::-webkit-scrollbar { display: none; }
+
+.tabBtn {
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tabBtn:hover {
+  color: var(--text-dark);
+}
+
+.tabBtn.activeTab {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* WORKSPACE SPLIT (Left: Tabs Content, Right: Sticky Panel) */
+.workspaceSplit {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.tabContentScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  padding-bottom: 80px; /* Space for action bar */
+}
+
+/* RIGHT STICKY PANEL */
+.rightPanel {
+  width: 280px;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-light);
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+.panelSection {
+  margin-bottom: 24px;
+}
+
+.panelSection h3 {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.05em;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg-hover);
+  font-size: 13px;
+}
+
+.statRow.total {
+  font-weight: 700;
+  border-bottom: none;
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-top: 4px;
+}
+
+.quickActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-btn);
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickActionBtn:hover {
+  background: white;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* BOTTOM ACTION BAR */
+.bottomActionBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 100;
+  box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.btnPrimary {
+  padding: 8px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnPrimary:hover {
+  background: var(--primary-hover);
+}
+
+/* TAB CONTENTS - COMMON COMPONENTS */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.colFull {
+  grid-column: 1 / -1;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.input, .select, .textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-btn);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(20,184,166,0.1);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Dental Chart Specifics */
+.dentalChartWrapper {
+  display: flex;
+  gap: 24px;
+}
+
+.chartContainer {
+  flex: 1;
+  background: var(--bg-hover);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.toothDetailPanel {
+  width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Treatment Plan Table */
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th {
+  background: var(--bg-hover);
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dataTable td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Prescription */
+.prescriptionRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-card);
+}
+
+/* Checkbox group */
+.checkboxGroup {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.checkboxItem input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}

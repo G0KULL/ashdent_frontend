@@ -1,0 +1,334 @@
+/* ═══════════════════════════════════════════════════════════════
+   DoctoSmart HMS — Clean White Light Theme v4.0
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+
+:root {
+  /* ── Primary Brand (Teal/Cyan) ── */
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-light: #34d399;
+  --primary-glow: rgba(16, 185, 129, 0.15);
+  --primary-gradient: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+  --accent: #0ea5e9;
+
+  /* ── Semantic Colors ── */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* ── Neutral Slate — PREMIUM LIGHT THEME ── */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+
+  /* ── Sidebar (Premium Light) ── */
+  --sidebar-from: #ffffff;
+  --sidebar-to: #ffffff;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #f1f5f9;
+  --sidebar-nav-hover: #f1f5f9;
+  --sidebar-nav-active: rgba(16, 185, 129, 0.1);
+  --sidebar-text: #64748b;
+  --sidebar-text-hover: #0f172a;
+
+  /* ── Layout ── */
+  --bg-main: #f8fafc;
+  --topbar-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: #ffffff;
+  --border-light: #f1f5f9;
+  --border-subtle: #f8fafc;
+
+  /* ── Dimensions ── */
+  --sidebar-w: 268px;
+  --sidebar-w-collapsed: 76px;
+  --topbar-h: 72px;
+
+  /* ── Shadows (Soft & Premium) ── */
+  --shadow-xs: 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.06);
+  --shadow-teal: 0 8px 24px rgba(16, 185, 129, 0.15);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  /* ── Border Radius (Modern & Soft) ── */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Transitions ── */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ── Reset & Base ── */
+html,
+body {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ffffff;
+  color: #334155;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+.title-font {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xs);
+  padding: 6px 12px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background-color: #ffffff;
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Utility: Card / Glass (light) ── */
+.glass {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+}
+
+.glass-dark {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  border-radius: 12px;
+}
+
+/* ── Utility: Gradient Text ── */
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Utility: Glow ── */
+.teal-glow {
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
+  }
+}
+
+.fade-in {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out both;
+}
+
+.slide-right {
+  animation: slideInRight 0.35s ease-out both;
+}
+
+/* ── Stagger animation utility ── */
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.10s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.20s;
+}
+
+.stagger-4 {
+  animation-delay: 0.20s;
+}
+
+/* -- Global Tables & Forms White Background -- */
+table,
+th,
+td,
+tr,
+.table,
+.table-responsive {
+  background-color: #ffffff !important;
+}
+
+th {
+  background-color: #ffffff !important;
+  color: #475569 !important;
+}
+
+td {
+  background-color: #ffffff !important;
+}
+
+input,
+select,
+textarea,
+.form-control,
+.form-select,
+form {
+  background-color: #ffffff !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.form-select:focus {
+  background-color: #ffffff !important;
+}

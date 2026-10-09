@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════
+   DoctoSmart HMS — App Shell Layout v4.0 (Light Theme)
+   ═══════════════════════════════════════════════════ */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-main);
+  position: relative;
+}
+
+/* subtle premium light pattern */
+.app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 70% 50% at 80% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 20% 100%, rgba(14, 165, 233, 0.04) 0%, transparent 60%);
+}
+
+/* ── Main Wrapper ── */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-left: var(--sidebar-w);
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sidebar-closed .main-wrapper {
+  margin-left: var(--sidebar-w-collapsed);
+}
+
+/* ── Content Area ── */
+.content {
+  flex: 1;
+  padding: 28px 32px 48px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: calc(100vh - var(--topbar-h));
+  scroll-behavior: smooth;
+  animation: fadeIn 0.35s ease-out;
+}
+
+/* ── Scrollbar ── */
+.content::-webkit-scrollbar       { width: 6px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+.content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Responsive ── */
+@media (max-width: 1280px) {
+  .content { padding: 24px 24px 40px; }
+}
+
+@media (max-width: 1024px) {
+  .content { padding: 20px 20px 36px; }
+}
+
+@media (max-width: 768px) {
+  .main-wrapper { margin-left: 0 !important; }
+  .content { padding: 16px 16px 32px; gap: 16px; }
+}
+
+/* ── Page Transition ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

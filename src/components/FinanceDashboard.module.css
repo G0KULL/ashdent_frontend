@@ -1,0 +1,548 @@
+.wrap {
+  padding: 32px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--slate-800);
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--slate-900);
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--slate-900) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sub {
+  font-size: 15px;
+  color: var(--slate-500);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Glassmorphic Filters */
+.filterBar {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filterBtn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterBtn:hover {
+  background: var(--slate-100);
+  color: var(--slate-900);
+}
+
+.filterBtnActive {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.dateSelect {
+  padding: 10px 16px;
+  background: var(--slate-50);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--slate-900);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.dateSelect:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* KPI Cards */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.kpiCard {
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.kpiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-glow);
+}
+
+.kpiIconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--slate-100);
+}
+
+.kpiContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpiLabel {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--slate-500);
+  margin-bottom: 4px;
+}
+
+.kpiValue {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--slate-900);
+  letter-spacing: -0.5px;
+}
+
+/* Specific KPI Colors */
+.kpiIncome .kpiIconWrap { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.kpiIncome .kpiValue { color: #10b981; }
+
+.kpiExpense .kpiIconWrap { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.kpiExpense .kpiValue { color: #ef4444; }
+
+.kpiProfit .kpiIconWrap { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.kpiProfit .kpiValue { color: #3b82f6; }
+
+.kpiPharmacy .kpiIconWrap { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.kpiPharmacy .kpiValue { color: #8b5cf6; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  background: var(--card-bg);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  display: inline-flex;
+}
+
+.tab {
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--slate-900);
+  background: var(--slate-100);
+}
+
+.tabActive {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+/* Charts & Main Content */
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.chartCard {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.cardSub {
+  font-size: 13px;
+  color: var(--slate-500);
+  font-weight: 500;
+}
+
+/* Income Breakdown List */
+.breakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.breakdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--slate-50);
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  transition: all 0.2s;
+}
+
+.breakdownItem:hover {
+  border-color: var(--primary-glow);
+  background: var(--card-bg);
+}
+
+.breakdownIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-right: 16px;
+}
+
+.breakdownInfo {
+  flex: 1;
+}
+
+.breakdownName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--slate-900);
+  margin-bottom: 4px;
+}
+
+.breakdownDesc {
+  font-size: 12px;
+  color: var(--slate-500);
+  font-weight: 500;
+}
+
+.breakdownVal {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+
+/* Pharmacy Specific */
+.pharmacyProfitBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pharmacySalesBadge {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.pharmacyExpenseBadge {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Tables */
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: var(--card-bg);
+  margin-top: 24px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background: var(--slate-50);
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--slate-800);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 500;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background: var(--slate-50);
+}
+
+/* Export Buttons */
+.exportBtns {
+  display: flex;
+  gap: 12px;
+}
+
+.btnPrimary, .btnSecondary {
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.btnPrimary:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btnSecondary {
+  background: var(--slate-50);
+  color: var(--slate-800);
+  border: 1px solid var(--border-subtle);
+}
+
+.btnSecondary:hover {
+  background: var(--slate-200);
+}
+
+@media (max-width: 1024px) {
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+  .dashboardGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .kpiGrid { grid-template-columns: 1fr; }
+  .filterBar { flex-direction: column; align-items: stretch; }
+  .filterGroup { flex-direction: column; }
+}
+
+/* Pharmacy Equation & Math operator Styles */
+.incomeSplitEquation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .incomeSplitEquation {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+.incomeSplitCard {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.incomeSplitCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.incomeSplitCard span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--slate-500);
+}
+
+.incomeSplitCard strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--slate-900);
+}
+
+/* Gradient card overrides for pharmacy tab */
+.salesCard {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(5, 150, 105, 0.05) 100%);
+  border-left: 4px solid #10b981;
+}
+.salesCard:hover {
+  border-color: #059669;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.08);
+}
+
+.expenseCard {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.03) 0%, rgba(220, 38, 38, 0.05) 100%);
+  border-left: 4px solid #ef4444;
+}
+.expenseCard:hover {
+  border-color: #dc2626;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.08);
+}
+
+.profitCard {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-left: 4px solid #6366f1;
+}
+.profitCard:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.08);
+}
+
+.cardHeaderArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardInfoTooltip {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slate-100);
+  color: var(--slate-500);
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  transition: all 0.2s;
+}
+
+.cardInfoTooltip:hover {
+  background: var(--slate-200);
+  color: var(--slate-800);
+}
+
+.mathOperator {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--slate-400);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--slate-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .mathOperator {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+}
+

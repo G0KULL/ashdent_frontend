@@ -1,0 +1,2 @@
+# Dental Software Backend Requirements
+-r backend/requirements.txt
