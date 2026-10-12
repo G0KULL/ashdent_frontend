@@ -14,6 +14,8 @@ export default function UserManagement() {
     return null
   })
 
+  const isSuperAdmin = currentUser?.is_super_admin || currentUser?.role === 'Super Admin'
+
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
