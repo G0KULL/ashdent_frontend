@@ -14,7 +14,7 @@ import {
 
 // The linear flow array
 const WORKFLOW_STEPS = [
-  { id: 'case-sheet', label: 'Case Sheet', component: NewTreatmentCaseForm },
+  { id: 'case-sheet', label: 'Case Sheet', component: NewTreatmentCaseForm }, 
   { id: 'dental-chart', label: 'Dental Chart', component: OdontogramPage },
   { id: 'diagnosis', label: 'Diagnosis', component: DiagnosisStep },
   { id: 'perio-chart', label: 'Periodontal Chart', component: PeriodontalChartStep },
