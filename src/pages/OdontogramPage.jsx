@@ -18,13 +18,6 @@ const FDI_PRIMARY = {
   LL: [71, 72, 73, 74, 75]
 };
 
-const FDI_MIXED = {
-  UR: [18, 17, 16, 55, 54, 53, 52, 51, 11],
-  UL: [21, 61, 62, 63, 64, 65, 26, 27, 28],
-  LR: [48, 47, 46, 85, 84, 83, 82, 81, 41],
-  LL: [31, 71, 72, 73, 74, 75, 36, 37, 38]
-};
-
 const FDI_NAMES = {
   // Permanent Maxillary Right (Quadrant 1)
   18: "Maxillary Right Third Molar (Wisdom Tooth)",
@@ -106,17 +99,18 @@ const getToothMetadata = (num) => {
   else if (q === 3 || q === 7) quadrant = 'Lower Left (LL)';
   else if (q === 4 || q === 8) quadrant = 'Lower Right (LR)';
   
-  let type = 'Molar';
-  if (digit >= 1 && digit <= 2) type = 'Incisor';
-  else if (digit === 3) type = 'Canine (Cuspid)';
-  else if (digit >= 4 && digit <= 5) type = 'Premolar (Bicuspid)';
+  const isPrimary = [5, 6, 7, 8].includes(q);
+  let type = isPrimary ? 'Primary Molar' : 'Molar';
+  if (digit >= 1 && digit <= 2) type = isPrimary ? 'Primary Incisor' : 'Incisor';
+  else if (digit === 3) type = isPrimary ? 'Primary Canine' : 'Canine (Cuspid)';
+  else if (digit >= 4 && digit <= 5) type = isPrimary ? 'Primary Molar' : 'Premolar (Bicuspid)';
 
   return {
     name: FDI_NAMES[num] || `Tooth ${num}`,
     arch,
     quadrant,
     type,
-    isPrimary: [5, 6, 7, 8].includes(q),
+    isPrimary,
   };
 };
 
@@ -162,7 +156,8 @@ const DropdownSelect = ({
   extraContent = null,
   allowCustom = true,
   customTypeLabel = "Option",
-  required = false
+  required = false,
+  compact = false
 }) => (
   <ClinicalCombobox
     label={label}
@@ -174,15 +169,19 @@ const DropdownSelect = ({
     customTypeLabel={customTypeLabel}
     extraContent={extraContent}
     required={required}
+    compact={compact}
   />
 );
 
 const getToothImage = (num) => {
     let type = 'molar';
     let lastDigit = num % 10;
+    const isPrimary = [5, 6, 7, 8].includes(Math.floor(num / 10));
     
     if (lastDigit >= 1 && lastDigit <= 3) type = 'incisor';
-    else if (lastDigit >= 4 && lastDigit <= 5) type = 'premolar';
+    else if (lastDigit >= 4 && lastDigit <= 5) {
+      type = isPrimary ? 'molar' : 'premolar';
+    }
     
     return `/${type}.png`; 
 };
@@ -218,7 +217,7 @@ const extractToothNumbers = (val) => {
   return [];
 };
 
-const Tooth = React.memo(({ num, isSelected, onClick, condition }) => {
+const Tooth = React.memo(({ num, isSelected, onClick, onDoubleClick, condition }) => {
   const isLower = [3, 4, 7, 8].includes(Math.floor(num / 10));
   const meta = getToothMetadata(num);
   
@@ -247,11 +246,12 @@ const Tooth = React.memo(({ num, isSelected, onClick, condition }) => {
     <div 
       className={`${styles.toothItem} ${isSelected ? styles.toothItemActive : ''}`} 
       onClick={(e) => onClick(num, e)}
+      onDoubleClick={(e) => onDoubleClick && onDoubleClick(num, e)}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
       aria-label={`Tooth ${num} - ${meta.name}${condition ? `. Condition: ${condition}` : ''}`}
-      title={`Tooth ${num} - ${meta.name}${condition ? ` (${condition})` : ''}`}
+      title={`Tooth ${num} - ${meta.name}${condition ? ` (${condition})` : ''} • Click to select/deselect, double-click for anatomical detail`}
     >
       <div className={`${styles.toothImageWrapper} ${wrapperStatusClass}`}>
         <img 
@@ -365,18 +365,24 @@ const ToothDetailModal = ({
         {/* Header */}
         <div className={styles.modalHeader}>
           <div className={styles.modalTitleBlock}>
-            <div className={styles.modalTitleBadge}>Tooth #{toothNum}</div>
-            <div>
-              <h2 className={styles.modalTitle}>{meta.name}</h2>
-              <div className={styles.modalSubtitle}>{meta.arch} • {meta.quadrant}</div>
+            <div className={styles.modalTitleBadge}>#{toothNum}</div>
+            <div className={styles.modalTitleTextGroup}>
+              <div className={styles.modalTitleRow}>
+                <h2 className={styles.modalTitle}>{meta.name}</h2>
+                <span className={styles.jawBadge}>{meta.arch?.includes('Maxillary') ? 'Maxillary (Upper Jaw)' : 'Mandibular (Lower Jaw)'}</span>
+                <span className={styles.quadBadge}>{meta.quadrant}</span>
+              </div>
+              <div className={styles.modalSubtitle}>
+                {meta.isPrimary ? 'Primary (Deciduous)' : 'Permanent (Adult)'} Dentition • FDI Two-Digit Notation
+              </div>
             </div>
           </div>
 
           <div className={styles.modalHeaderActions}>
-            <span className={styles.statusPill} style={{ color: statusBadge.color, backgroundColor: statusBadge.bg }}>
+            <span className={styles.statusPill} style={{ color: statusBadge.color, backgroundColor: statusBadge.bg, borderColor: statusBadge.color + '55' }}>
               <span className={styles.statusPillIcon}>{statusBadge.icon}</span> {statusBadge.label}
             </span>
-            <button className={styles.modalCloseBtn} onClick={onClose} aria-label="Close modal">&times;</button>
+            <button className={styles.modalCloseBtn} onClick={onClose} aria-label="Close modal" title="Close (Esc)">&times;</button>
           </div>
         </div>
 
@@ -390,7 +396,7 @@ const ToothDetailModal = ({
             {condition === 'Teeth Removed' && (
               <div className={styles.removedWarningBanner}>
                 <div className={styles.removedWarningTitle}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   Tooth Recorded as Removed / Extracted
                 </div>
                 <div>
@@ -400,10 +406,11 @@ const ToothDetailModal = ({
             )}
 
             {/* Tooth Condition Selector (Master Backed) */}
-            <div style={{ marginBottom: '0.85rem' }}>
+            <div className={styles.fieldRow}>
               <DropdownSelect
                 label="Tooth Condition"
                 value={condition || ''}
+                compact={true}
                 onChange={async (val) => {
                   setModalError('');
                   if (val && resolveAndSyncMasters) {
@@ -414,13 +421,13 @@ const ToothDetailModal = ({
                   }
                 }}
                 options={conditionOptions}
-                placeholder="Select or enter condition (e.g. Decayed, Missing, Filled)..."
+                placeholder="Select or enter condition (e.g. Decayed, Missing)..."
                 customTypeLabel="Tooth Condition"
               />
             </div>
 
             {/* Quick Condition Actions */}
-            <div className={styles.quickConditionRow} style={{ marginBottom: '1.25rem' }}>
+            <div className={styles.quickConditionRow}>
               <button 
                 type="button"
                 className={`${styles.condBtn} ${condition === 'Teeth Removed' ? styles.condActiveRemove : ''}`}
@@ -448,43 +455,46 @@ const ToothDetailModal = ({
               <div className={styles.addedTreatmentsCard}>
                 <div className={styles.cardHeaderTitle}>Planned Treatments</div>
                 {toothPlanned.map(pt => (
-                  <div key={pt.id} className={styles.addedTxRow}>
-                    <div>
-                      <div className={styles.txName}>{pt.treatment}</div>
-                      <div className={styles.txCategory}>{pt.category} {pt.surfaces ? `• Surfaces: ${pt.surfaces}` : ''}</div>
+                  <div key={pt.id} className={styles.addedTreatmentItem}>
+                    <div className={styles.addedTreatmentInfo}>
+                      <span className={styles.addedTreatmentTitle}>{pt.treatment}</span>
+                      <span className={styles.addedTreatmentMeta}>{pt.category} • Surfaces: {pt.surfaces}</span>
                     </div>
-                    <button className={styles.txRemoveBtn} onClick={() => onRemovePlannedTreatment(pt.id)} title="Remove">&times;</button>
+                    <button 
+                      type="button" 
+                      className={styles.removePtBtn} 
+                      onClick={() => onRemovePlannedTreatment(pt.id)}
+                      title="Remove planned treatment"
+                    >
+                      &times;
+                    </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* In-Modal Clinical Validation Warning */}
-            {modalError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#991b1b', borderRadius: '6px', padding: '0.65rem 0.85rem', marginBottom: '1rem', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                <strong>Clinical Validation: </strong> {modalError}
-              </div>
-            )}
-
-            {/* Dropdowns */}
-            <DropdownSelect 
-              label="On Examination" 
-              value={examination} 
-              onChange={setExamination} 
-              options={examOptions} 
-              placeholder="Search or enter clinical finding..."
+            {/* Clinical Finding / On Examination */}
+            <DropdownSelect
+              label="On Examination"
+              value={examination}
+              compact={true}
+              onChange={setExamination}
+              options={examOptions}
+              placeholder="Search or enter examination finding..."
               customTypeLabel="Clinical Finding"
             />
 
-            <DropdownSelect 
-              label={<>Diagnosis <small>Suggestions below</small></>} 
-              value={diagnosis} 
-              onChange={setDiagnosis} 
+            {/* Diagnosis */}
+            <DropdownSelect
+              label="Diagnosis"
+              value={diagnosis}
+              compact={true}
+              onChange={setDiagnosis}
               options={diagnosisOptions}
               placeholder="Search or enter diagnosis..."
               customTypeLabel="Diagnosis"
               extraContent={
-                <div className={styles.suggestions} style={{ marginTop: '0.5rem' }}>
+                <div className={styles.suggestions}>
                   <div className={styles.suggestionChip} onClick={() => setDiagnosis('Gingivitis')}>Gingivitis</div>
                   <div className={styles.suggestionChip} onClick={() => setDiagnosis('Reversible Pulpitis')}>Reversible Pulpitis</div>
                   <div className={styles.suggestionChip} onClick={() => setDiagnosis('Dental Caries')}>Dental Caries</div>
@@ -492,76 +502,65 @@ const ToothDetailModal = ({
               }
             />
 
-            <DropdownSelect 
-              label="Treatment Suggested" 
-              value={treatment} 
-              onChange={setTreatment} 
+            {/* Treatment Suggested */}
+            <DropdownSelect
+              label="Treatment Suggested"
+              value={treatment}
+              compact={true}
+              onChange={setTreatment}
               options={treatmentOptions}
-              placeholder="Select or enter procedure plan..."
+              placeholder="Search or enter treatment procedure..."
               customTypeLabel="Treatment Procedure"
-              required={true}
               extraContent={
-                <div className={styles.suggestions} style={{ marginTop: '0.5rem' }}>
-                  <div className={styles.suggestionChip} onClick={() => setTreatment('EXTRACTION OF THIRD MOLAR')}>EXTRACTION OF THIRD MOLAR</div>
-                  <div className={styles.suggestionChip} onClick={() => setTreatment('COMPOSITE RESTORATION')}>COMPOSITE RESTORATION</div>
+                <div className={styles.suggestions}>
+                  <div className={styles.suggestionChip} onClick={() => setTreatment('Root Canal Treatment')}>Root Canal</div>
+                  <div className={styles.suggestionChip} onClick={() => setTreatment('Composite Filling')}>Composite Filling</div>
+                  <div className={styles.suggestionChip} onClick={() => setTreatment('Dental Crown')}>Dental Crown</div>
                 </div>
               }
             />
 
-            {/* Surface Selector SVG */}
-            <div className={styles.surfaceSection}>
-              <label className={styles.formLabel}>Select Tooth Surfaces</label>
-              <div className={styles.surfaceSelectorBox}>
-                <div className={styles.surfaceSelector} title="Click surfaces to select">
-                  <svg viewBox="0 0 100 100" stroke="currentColor" strokeWidth="2" style={{ width: '100%', height: '100%' }}>
-                    <path className={styles.surfacePath} d="M 22 22 L 78 22 L 65 35 L 35 35 Z" fill={selectedSurfaces.includes('B') ? '#3b82f6' : 'transparent'} onClick={() => toggleSurface('B')} />
-                    <path className={styles.surfacePath} d="M 78 22 L 78 78 L 65 65 L 65 35 Z" fill={selectedSurfaces.includes('R') ? '#3b82f6' : 'transparent'} onClick={() => toggleSurface('R')} />
-                    <path className={styles.surfacePath} d="M 22 78 L 78 78 L 65 65 L 35 65 Z" fill={selectedSurfaces.includes('L') ? '#3b82f6' : 'transparent'} onClick={() => toggleSurface('L')} />
-                    <path className={styles.surfacePath} d="M 22 22 L 22 78 L 35 65 L 35 35 Z" fill={selectedSurfaces.includes('M') ? '#3b82f6' : 'transparent'} onClick={() => toggleSurface('M')} />
-                    <rect className={styles.surfacePath} x="35" y="35" width="30" height="30" fill={selectedSurfaces.includes('O') ? '#3b82f6' : 'transparent'} onClick={() => toggleSurface('O')} />
-                  </svg>
-                </div>
-                <div className={styles.surfaceLabels}>
-                  <span><strong>B:</strong> Buccal/Facial</span>
-                  <span><strong>L:</strong> Lingual/Palatal</span>
-                  <span><strong>M:</strong> Mesial</span>
-                  <span><strong>D/R:</strong> Distal</span>
-                  <span><strong>O:</strong> Occlusal/Incisal</span>
-                </div>
+            {/* Tooth Surfaces */}
+            <div className={styles.surfacesBlock}>
+              <div className={styles.fieldLabel}>Tooth Surfaces Affected</div>
+              <div className={styles.surfaceButtonGroup}>
+                {[
+                  { code: 'B', label: 'Buccal (B)' },
+                  { code: 'L', label: 'Lingual (L)' },
+                  { code: 'O', label: 'Occlusal (O)' },
+                  { code: 'M', label: 'Mesial (M)' },
+                  { code: 'D', label: 'Distal (D)' }
+                ].map(s => (
+                  <button
+                    key={s.code}
+                    type="button"
+                    className={`${styles.surfaceBtn} ${selectedSurfaces.includes(s.code) ? styles.surfaceBtnActive : ''}`}
+                    onClick={() => toggleSurface(s.code)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Past History for this tooth */}
-            {toothHistory.length > 0 && (
-              <div className={styles.historyCard}>
-                <div className={styles.cardHeaderTitle}>Tooth Clinical History</div>
-                {toothHistory.map((h, idx) => (
-                  <div key={idx} className={styles.historyRow}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <strong>{new Date(h.date).toLocaleDateString()}</strong>
-                      <span style={{ color: h.status?.toLowerCase() === 'completed' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
-                        {h.status || 'Completed'}
-                      </span>
-                    </div>
-                    <div><strong>Tx:</strong> {h.treatment || 'N/A'}</div>
-                    {h.diagnosis?.length > 0 && <div><strong>Dx:</strong> {Array.isArray(h.diagnosis) ? h.diagnosis.join(', ') : h.diagnosis}</div>}
-                  </div>
-                ))}
+            {modalError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#991b1b', borderRadius: '6px', padding: '0.65rem 0.85rem', marginTop: '0.75rem', fontSize: '0.85rem' }}>
+                {modalError}
               </div>
             )}
           </div>
 
           {/* Right Panel: Large Tooth Display, Views, Anatomy & Measurements */}
           <div className={styles.modalRightPanel}>
-            <h3 className={styles.sectionHeader}>2. Anatomical View & Measurements</h3>
+            <h3 className={styles.sectionHeader}>2. Anatomy & View Inspection</h3>
 
-            {/* Tooth View Tabs */}
-            <div className={styles.viewTabs}>
-              {['Buccal', 'Occlusal', 'Lingual', 'Mesial', 'Distal'].map(view => (
+            {/* View Switching Tabs */}
+            <div className={styles.viewTabsRow}>
+              {['Occlusal', 'Buccal', 'Lingual', 'Mesial', 'Distal'].map(view => (
                 <button
                   key={view}
                   type="button"
-                  className={`${styles.viewTabBtn} ${activeView === view ? styles.viewTabActive : ''}`}
+                  className={`${styles.viewTabBtn} ${activeView === view ? styles.viewTabBtnActive : ''}`}
                   onClick={() => setActiveView(view)}
                 >
                   {view}
@@ -569,102 +568,103 @@ const ToothDetailModal = ({
               ))}
             </div>
 
-            {/* Large Tooth Display Container */}
-            <div className={`${styles.largeToothDisplay} ${
-              condition === 'Treatment Taken Before' ? styles.largeDisplayTaken :
-              condition === 'Teeth Removed' ? styles.largeDisplayRemoved :
-              condition === 'Recommended To Take Treatment' ? styles.largeDisplayRecommended : ''
-            }`}>
-              <div className={styles.viewBadge}>{activeView} Aspect</div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img 
-                  src={getToothImage(toothNum)} 
-                  alt={`Tooth ${toothNum} - ${activeView} view`}
-                  className={styles.largeToothImg}
-                  style={{ 
-                    transform: getViewTransform(),
-                    opacity: condition === 'Teeth Removed' ? 0.35 : 1,
-                    filter: condition === 'Teeth Removed' ? 'grayscale(100%)' :
-                            condition === 'Treatment Taken Before' ? 'drop-shadow(0 4px 10px rgba(168, 85, 247, 0.75))' :
-                            condition === 'Recommended To Take Treatment' ? 'drop-shadow(0 4px 10px rgba(234, 179, 8, 0.8))' : 'none'
-                  }}
-                />
-                {condition === 'Teeth Removed' && (
-                  <div className={styles.removedCross} style={{ fontSize: '72px' }} title="Tooth Removed">✕</div>
-                )}
-              </div>
-              <div className={styles.largeToothNumLabel}>FDI #{toothNum}</div>
+            {/* Realistic Tooth Illustration Viewport */}
+            <div className={styles.illustrationViewport}>
+              <img
+                src={getToothImage(toothNum)}
+                alt={`Tooth ${toothNum} - ${activeView} View`}
+                className={styles.modalToothImg}
+                style={{ transform: getViewTransform() }}
+              />
+              <span className={styles.activeViewBadge}>{activeView} Aspect</span>
             </div>
 
-            {/* Tooth Identification Info Card */}
-            <div className={styles.infoCard}>
-              <div className={styles.infoCardTitle}>Tooth Identification</div>
-              <div className={styles.infoGrid}>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>FDI Number:</span>
-                  <span className={styles.infoVal}>#{toothNum}</span>
+            {/* Clinical Measurements / Periodontal Charting */}
+            <div className={styles.measurementsCard}>
+              <div className={styles.cardHeaderTitle}>Periodontal & Mobility Parameters</div>
+              <div className={styles.measurementsGrid}>
+                <div className={styles.measurementItem}>
+                  <span className={styles.measureLabel}>Mobility</span>
+                  <span className={styles.measureVal}>Grade 0</span>
                 </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Tooth Type:</span>
+                <div className={styles.measurementItem}>
+                  <span className={styles.measureLabel}>Pocket Depth</span>
+                  <span className={styles.measureVal}>2 - 3 mm</span>
+                </div>
+                <div className={styles.measurementItem}>
+                  <span className={styles.measureLabel}>Furcation</span>
+                  <span className={styles.measureVal}>None</span>
+                </div>
+                <div className={styles.measurementItem}>
+                  <span className={styles.measureLabel}>Plaque Index</span>
+                  <span className={styles.measureVal}>Normal</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tooth Anatomy Facts */}
+            <div className={styles.anatomyCard}>
+              <div className={styles.cardHeaderTitle}>Tooth Specifications & Anatomy</div>
+              <div className={styles.anatomyRows}>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Tooth Number</span>
+                  <span className={styles.infoVal}>#{toothNum} (FDI Two-Digit)</span>
+                </div>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Tooth Type</span>
                   <span className={styles.infoVal}>{meta.type}</span>
                 </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Arch / Jaw:</span>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Dentition</span>
+                  <span className={styles.infoVal}>{meta.isPrimary ? 'Primary (Deciduous)' : 'Permanent (Adult)'}</span>
+                </div>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Dental Arch</span>
                   <span className={styles.infoVal}>{meta.arch}</span>
                 </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Quadrant:</span>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Quadrant</span>
                   <span className={styles.infoVal}>{meta.quadrant}</span>
                 </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Dentition:</span>
-                  <span className={styles.infoVal}>{meta.isPrimary ? 'Primary (Deciduous)' : 'Permanent (Adult)'}</span>
+                <div className={styles.anatomyRow}>
+                  <span className={styles.infoKey}>Normal Root Count</span>
+                  <span className={styles.infoVal}>{[16, 17, 18, 54, 55, 64, 65].includes(toothNum) ? '3 Roots (Trifurcated)' : [46, 47, 48, 74, 75, 84, 85].includes(toothNum) ? '2 Roots (Bifurcated)' : [14, 24].includes(toothNum) ? '1-2 Roots' : 'Single Root'}</span>
                 </div>
               </div>
             </div>
 
-            {/* Dimensions / Anatomical Reference Card */}
-            <div className={styles.infoCard}>
-              <div className={styles.infoCardTitle}>Dimensions & Measurements</div>
-              <div className={styles.infoGrid}>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Mesiodistal Width:</span>
-                  <span className={styles.infoValNotRec}>Not recorded</span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Buccolingual Width:</span>
-                  <span className={styles.infoValNotRec}>Not recorded</span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Crown Height:</span>
-                  <span className={styles.infoValNotRec}>Not recorded</span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Root Length:</span>
-                  <span className={styles.infoValNotRec}>Not recorded</span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoKey}>Overall Length:</span>
-                  <span className={styles.infoValNotRec}>Not recorded</span>
+            {/* Past Treatment History for this tooth */}
+            {toothHistory.length > 0 && (
+              <div className={styles.historyCardModal}>
+                <div className={styles.cardHeaderTitle}>Recorded Patient History for #{toothNum}</div>
+                <div className={styles.historyList}>
+                  {toothHistory.map(h => (
+                    <div key={h.id} className={styles.historyListItem}>
+                      <div>
+                        <strong>{h.treatment}</strong>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Date: {h.date || 'Previous Visit'} • Doctor: {h.doctor || 'Attending Clinician'}</div>
+                      </div>
+                      <span style={{ color: h.status?.toLowerCase() === 'completed' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                        {h.status || 'Recorded'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className={styles.notRecNote}>
-                * Patient-specific millimeter measurements not recorded in current chart.
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Modal Footer Actions */}
         <div className={styles.modalFooter}>
           <button type="button" className={styles.btnSecondary} onClick={onClose}>Close</button>
           <button 
             type="button" 
-            className={styles.btnPrimary}
+            className={styles.btnPrimary} 
             onClick={async () => {
               if (treatment || diagnosis) {
                 if (condition === 'Teeth Removed' && !isReplacementProcedure(treatment)) {
-                  setModalError(`Tooth #${toothNum} is marked as Removed. Routine restorations or extractions cannot be performed on a missing tooth. Please select a replacement procedure (e.g. Implant, Bridge, Denture) or unmark the removed status.`);
+                  setModalError(`Cannot apply "${treatment || 'routine treatment'}" to a tooth marked as removed. Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`);
                   return;
                 }
                 setModalError('');
@@ -686,13 +686,13 @@ function OdontogramContent({ isWorkflowStep }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { patientId } = useParams();
-  const [dentition, setDentition] = useState('Adult');
-  const [isMultiSelect, setIsMultiSelect] = useState(false);
+
+  // Multi-tooth Selection State
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [existingConditions, setExistingConditions] = useState({});
+  const [treatmentHistory, setTreatmentHistory] = useState([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [viewRegion, setViewRegion] = useState('Full Mouth');
   const [validationMessage, setValidationMessage] = useState('');
   
   // Tracking
@@ -789,72 +789,105 @@ function OdontogramContent({ isWorkflowStep }) {
     }
   };
 
-  // Treatment History Integration
-  const [treatmentHistory, setTreatmentHistory] = useState([]);
-  
-  useEffect(() => {
-    // 1. Restore cached conditions from localStorage if available
-    if (patientId) {
-      try {
-        const cached = localStorage.getItem('ashdent_odontogram_' + patientId);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed === 'object') {
-            setExistingConditions(parsed);
-          }
-        }
-      } catch (e) {
-        console.error("Error reading cached odontogram", e);
-      }
-    }
-
-    // 2. Fetch treatment history from backend
-    if (patientId) {
+  // Helper to persist selections to backend database
+  const persistSelectionsToBackend = useCallback(async (teethToSave) => {
+    if (!patientId) return;
+    try {
       const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
       const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' };
-      
-      fetch(`http://127.0.0.1:8000/api/patient/${patientId}/treatment-history/`, { headers })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
+      await fetch('http://127.0.0.1:8000/api/clinical-notes/save/', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          patient_id: patientId,
+          appointment_id: location.state?.appointmentId || null,
+          selected_teeth: teethToSave
         })
-        .then(data => {
-          if (Array.isArray(data)) {
-            setTreatmentHistory(data);
-            
-            const historyConditions = {};
-            data.forEach(item => {
-              const toothNums = extractToothNumbers(item.tooth_number);
-              if (toothNums.length === 0) return;
-
-              const txName = (item.treatment || '').toLowerCase();
-              const itemStatus = (item.status || '').toLowerCase();
-              const isExtraction = txName.includes('extraction') || txName.includes('removed') || txName.includes('exodontia');
-
-              toothNums.forEach(t => {
-                if (isExtraction) {
-                  historyConditions[t] = 'Teeth Removed';
-                } else if (itemStatus === 'completed') {
-                  historyConditions[t] = 'Treatment Taken Before';
-                } else if (itemStatus === 'planned' || itemStatus === 'recommended') {
-                  historyConditions[t] = 'Recommended To Take Treatment';
-                }
-              });
-            });
-
-            setExistingConditions(prev => {
-              const merged = { ...historyConditions, ...prev };
-              try {
-                localStorage.setItem('ashdent_odontogram_' + patientId, JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-        })
-        .catch(err => {
-          console.warn("Could not load backend treatment history, utilizing local chart state:", err);
-        });
+      });
+    } catch (err) {
+      console.warn("Could not persist selected teeth to clinical-notes:", err);
     }
+  }, [patientId, location.state]);
+
+  // Load initial patient state from LocalStorage, ClinicalNotes and Treatment History
+  useEffect(() => {
+    if (!patientId) return;
+
+    // 1. Restore cached conditions and selections from localStorage if available
+    try {
+      const cachedConditions = localStorage.getItem('ashdent_odontogram_' + patientId);
+      if (cachedConditions) {
+        const parsed = JSON.parse(cachedConditions);
+        if (parsed && typeof parsed === 'object') {
+          setExistingConditions(parsed);
+        }
+      }
+      const cachedTeeth = localStorage.getItem('ashdent_selected_teeth_' + patientId);
+      if (cachedTeeth) {
+        const parsedTeeth = JSON.parse(cachedTeeth);
+        if (Array.isArray(parsedTeeth) && parsedTeeth.length > 0) {
+          setSelectedTeeth(Array.from(new Set(parsedTeeth.map(t => parseInt(t, 10)).filter(Boolean))));
+        }
+      }
+    } catch (e) {
+      console.error("Error reading cached odontogram data", e);
+    }
+
+    const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
+    const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' };
+
+    // 2. Fetch clinical notes (examination record) from backend
+    fetch(`http://127.0.0.1:8000/api/clinical-notes/${patientId}/`, { headers })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && Array.isArray(data.selected_teeth) && data.selected_teeth.length > 0) {
+          const dbTeeth = Array.from(new Set(data.selected_teeth.map(t => parseInt(t, 10)).filter(Boolean)));
+          setSelectedTeeth(prev => Array.from(new Set([...prev, ...dbTeeth])));
+        }
+      })
+      .catch(err => {
+        console.warn("Could not load clinical notes for patient:", err);
+      });
+
+    // 3. Fetch treatment history from backend
+    fetch(`http://127.0.0.1:8000/api/patient/${patientId}/treatment-history/`, { headers })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTreatmentHistory(data);
+          
+          const historyConditions = {};
+          data.forEach(item => {
+            const toothNums = extractToothNumbers(item.tooth_number);
+            if (toothNums.length === 0) return;
+
+            const txName = (item.treatment || '').toLowerCase();
+            const itemStatus = (item.status || '').toLowerCase();
+            const isExtraction = txName.includes('extraction') || txName.includes('removed') || txName.includes('exodontia');
+
+            toothNums.forEach(t => {
+              if (isExtraction) {
+                historyConditions[t] = 'Teeth Removed';
+              } else if (itemStatus === 'completed') {
+                historyConditions[t] = 'Treatment Taken Before';
+              } else if (itemStatus === 'planned' || itemStatus === 'recommended') {
+                historyConditions[t] = 'Recommended To Take Treatment';
+              }
+            });
+          });
+
+          setExistingConditions(prev => {
+            const merged = { ...historyConditions, ...prev };
+            try {
+              localStorage.setItem('ashdent_odontogram_' + patientId, JSON.stringify(merged));
+            } catch (e) {}
+            return merged;
+          });
+        }
+      })
+      .catch(err => {
+        console.warn("Could not load backend treatment history, utilizing local chart state:", err);
+      });
   }, [patientId]);
 
   const toggleSurface = (surface) => {
@@ -863,84 +896,73 @@ function OdontogramContent({ isWorkflowStep }) {
     );
   };
 
-  const currentFDI = dentition === 'Adult' ? FDI_ADULT : dentition === 'Pedo' ? FDI_PRIMARY : FDI_MIXED;
-
-  const handleDentitionChange = (newDentition) => {
-    setDentition(newDentition);
-    const newFDI = newDentition === 'Adult' ? FDI_ADULT : newDentition === 'Pedo' ? FDI_PRIMARY : FDI_MIXED;
-    const allTeethInDentition = [
-      ...newFDI.UR,
-      ...newFDI.UL,
-      ...newFDI.LR,
-      ...newFDI.LL
-    ];
-    // Filter out teeth that are not present in the new dentition
-    setSelectedTeeth(prev => prev.filter(t => allTeethInDentition.includes(t)));
-  };
-
+  // Multiple Tooth Selection Handler: Toggles selected state without clearing other selections
   const handleToothClick = useCallback((num, e) => {
-    const isModifierPressed = e && (e.ctrlKey || e.metaKey || e.shiftKey);
-    const multi = isMultiSelect || isModifierPressed;
+    if (e && e.stopPropagation) e.stopPropagation();
+    const toothNum = parseInt(num, 10);
+    if (!toothNum) return;
 
     setValidationMessage('');
     setSelectedTeeth(prev => {
-      if (multi) {
-        if (prev.includes(num)) {
-          return prev.filter(t => t !== num);
-        }
-        return [...prev, num];
-      } else {
-        return [num];
-      }
-    });
+      const exists = prev.includes(toothNum);
+      const next = exists 
+        ? prev.filter(t => t !== toothNum)
+        : Array.from(new Set([...prev, toothNum]));
 
-    if (!multi) {
-      setIsModalOpen(true);
-      setIsPanelOpen(false);
-    } else {
-      setIsPanelOpen(true);
-    }
-  }, [isMultiSelect]);
+      // Save to localStorage immediately as local cache
+      if (patientId) {
+        try {
+          localStorage.setItem(`ashdent_selected_teeth_${patientId}`, JSON.stringify(next));
+        } catch (err) {}
+      }
+      return next;
+    });
+  }, [patientId]);
+
+  // Double click directly opens detailed modal for that tooth
+  const handleToothDoubleClick = useCallback((num, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const toothNum = parseInt(num, 10);
+    if (!toothNum) return;
+
+    setSelectedTeeth(prev => Array.from(new Set([...prev, toothNum])));
+    setSelectedType('tooth');
+    setSelectedValue(toothNum);
+    setIsModalOpen(true);
+  }, []);
 
   useEffect(() => {
     if (selectedTeeth.length === 0) {
-        setIsPanelOpen(false);
-        setIsModalOpen(false);
-        setSelectedType('');
-        setSelectedValue('');
+      setSelectedType('');
+      setSelectedValue('');
     } else if (selectedTeeth.length === 1) {
-        setSelectedType('tooth');
-        setSelectedValue(selectedTeeth[0]);
+      setSelectedType('tooth');
+      setSelectedValue(selectedTeeth[0]);
     } else {
-        setSelectedType('custom');
+      setSelectedType('custom');
+      setSelectedValue(selectedTeeth[0]);
     }
   }, [selectedTeeth]);
-
-  const handleRegionSelect = (region) => {
-    setViewRegion(region);
-    const showUR = ['Full Mouth', 'Upper', 'Upper Right'].includes(region);
-    const showUL = ['Full Mouth', 'Upper', 'Upper Left'].includes(region);
-    const showLR = ['Full Mouth', 'Lower', 'Lower Right'].includes(region);
-    const showLL = ['Full Mouth', 'Lower', 'Lower Left'].includes(region);
-
-    const visibleTeeth = [];
-    if (showUR) visibleTeeth.push(...currentFDI.UR);
-    if (showUL) visibleTeeth.push(...currentFDI.UL);
-    if (showLR) visibleTeeth.push(...currentFDI.LR);
-    if (showLL) visibleTeeth.push(...currentFDI.LL);
-
-    // Keep only selected teeth that remain visible in the new jaw region
-    setSelectedTeeth(prev => prev.filter(t => visibleTeeth.includes(t)));
-  };
 
   const handleClosePanel = () => {
     setIsPanelOpen(false);
     setIsModalOpen(false);
+    // Selections are preserved while interacting with the chart
+    setValidationMessage('');
+  };
+
+  const handleClearSelection = () => {
     setSelectedTeeth([]);
     setSelectedType('');
     setSelectedValue('');
     setSelectedSurfaces([]);
     setValidationMessage('');
+    if (patientId) {
+      try {
+        localStorage.removeItem(`ashdent_selected_teeth_${patientId}`);
+      } catch (e) {}
+    }
+    persistSelectionsToBackend([]);
   };
 
   const handleUpdateCondition = (num, cond) => {
@@ -965,6 +987,8 @@ function OdontogramContent({ isWorkflowStep }) {
   };
 
   const handleAddTreatment = async () => {
+    if (selectedTeeth.length === 0) return;
+
     // Resolve / auto-create masters for entered procedure, diagnosis, examination
     const resolved = await resolveAndSyncMasters({
       treatmentVal: treatment,
@@ -1011,8 +1035,10 @@ function OdontogramContent({ isWorkflowStep }) {
       if (patientId) {
         try {
           localStorage.setItem('ashdent_odontogram_' + patientId, JSON.stringify(newConditions));
+          localStorage.setItem('ashdent_selected_teeth_' + patientId, JSON.stringify(selectedTeeth));
         } catch (e) {}
       }
+      persistSelectionsToBackend(selectedTeeth);
 
       setExamination('');
       setDiagnosis('');
@@ -1044,8 +1070,10 @@ function OdontogramContent({ isWorkflowStep }) {
     if (patientId) {
       try {
         localStorage.setItem('ashdent_odontogram_' + patientId, JSON.stringify(newConditions));
+        localStorage.setItem('ashdent_selected_teeth_' + patientId, JSON.stringify(selectedTeeth));
       } catch (e) {}
     }
+    persistSelectionsToBackend(selectedTeeth);
     
     setExamination('');
     setDiagnosis('');
@@ -1105,14 +1133,18 @@ function OdontogramContent({ isWorkflowStep }) {
       }
     }
 
-    // Persist conditions to localStorage
+    // Persist conditions and selections to localStorage
     if (patientId) {
       try {
         localStorage.setItem('ashdent_odontogram_' + patientId, JSON.stringify(existingConditions));
+        localStorage.setItem('ashdent_selected_teeth_' + patientId, JSON.stringify(selectedTeeth));
       } catch (e) {}
     }
 
-    // Check if anything was charted or planned
+    // Persist selected teeth to backend database via clinical notes
+    await persistSelectionsToBackend(selectedTeeth);
+
+    // Check if anything was charted or planned or selected
     const hasChartedConditions = Object.keys(existingConditions).length > 0;
     if (finalTreatments.length === 0 && !hasChartedConditions && selectedTeeth.length === 0) {
       alert("Please chart a tooth condition or select a treatment before continuing to Treatment Plans.");
@@ -1123,97 +1155,175 @@ function OdontogramContent({ isWorkflowStep }) {
     navigate(`${basePath}/treatment-plans/${patientId || 'new'}`, { 
       state: { 
         diagnoses: finalTreatments,
-        chartConditions: existingConditions
+        chartConditions: existingConditions,
+        selectedTeeth: selectedTeeth
       } 
     });
   };
 
   const getPanelTitle = () => {
-    if (selectedType === 'tooth') return `Treatment Plan — Tooth ${selectedValue}`;
-    return 'Treatment Plan for Selected Teeth';
+    if (selectedType === 'tooth') return `Treatment Plan — Tooth #${selectedValue}`;
+    return `Treatment Plan for Selected Teeth (${selectedTeeth.length})`;
   };
-
-  const showUR = ['Full Mouth', 'Upper', 'Upper Right'].includes(viewRegion);
-  const showUL = ['Full Mouth', 'Upper', 'Upper Left'].includes(viewRegion);
-  const showLR = ['Full Mouth', 'Lower', 'Lower Right'].includes(viewRegion);
-  const showLL = ['Full Mouth', 'Lower', 'Lower Left'].includes(viewRegion);
-
-  const showUpperRow = showUR || showUL;
-  const showLowerRow = showLR || showLL;
 
   const removedSelectedTeeth = selectedTeeth.filter(t => existingConditions[t] === 'Teeth Removed');
   const eligibleSelectedTeeth = selectedTeeth.filter(t => existingConditions[t] !== 'Teeth Removed');
 
   return (
     <div className={styles.pageContainer}>
+      {/* Clean Header - All filters and separate sections completely removed */}
       <div className={styles.header}>
-        <h1 className={styles.pageTitle}>Dental Chart & Treatment Plans</h1>
-        <div className={styles.controlsRow}>
-          <div className={styles.dentitionToggles}>
-            <button className={`${styles.toggleBtn} ${dentition === 'Adult' ? styles.active : ''}`} onClick={() => handleDentitionChange('Adult')}>Adult</button>
-            <button className={`${styles.toggleBtn} ${dentition === 'Pedo' ? styles.active : ''}`} onClick={() => handleDentitionChange('Pedo')}>Pedo</button>
-            <button className={`${styles.toggleBtn} ${dentition === 'Mixed' ? styles.active : ''}`} onClick={() => handleDentitionChange('Mixed')}>Mixed</button>
-          </div>
-          
-          <button 
-              className={`${styles.toggleBtn} ${isMultiSelect ? styles.active : ''}`}
-              onClick={() => {
-                const nextMulti = !isMultiSelect;
-                setIsMultiSelect(nextMulti);
-                if (!nextMulti && selectedTeeth.length > 1) {
-                  setSelectedTeeth([selectedTeeth[selectedTeeth.length - 1]]);
-                }
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid #cbd5e1' }}
-          >
-              {isMultiSelect ? '✓ Multi-Select Teeth' : 'Multi-Select Teeth'}
-          </button>
+        <div>
+          <h1 className={styles.pageTitle}>Dental Chart & Treatment Plans</h1>
+          <p style={{ margin: '4px 0 0 0', fontSize: '0.875rem', color: '#64748b' }}>
+            Unified Anatomical Teeth Chart • All Adult & Pediatric Teeth
+          </p>
         </div>
       </div>
 
       <div className={`${styles.chartArea} ${isPanelOpen ? styles.chartAreaShifted : ''}`}>
         
-        <div className={styles.regionSelectors}>
-            {['Full Mouth', 'Upper', 'Lower', 'Upper Right', 'Upper Left', 'Lower Right', 'Lower Left'].map(region => (
-                <button 
-                    key={region}
-                    className={`${styles.regionBtn} ${viewRegion === region ? styles.activeRegionBtn : ''}`} 
-                    onClick={() => handleRegionSelect(region)}
-                >
-                    {region}
-                </button>
-            ))}
-        </div>
-
+        {/* Unified Teeth Chart: All adult and pediatric teeth together in correct anatomical arrangement */}
         <div className={styles.archContainer}>
-          {showUpperRow && (
-            <div className={styles.archRow}>
-              {showUR && currentFDI.UR.map(num => (
-                <Tooth key={num} num={num} isSelected={selectedTeeth.includes(num)} onClick={handleToothClick} condition={existingConditions[num]} />
-              ))}
-              {showUR && showUL && <div style={{ width: '40px' }} />} {/* Midline gap */}
-              {showUL && currentFDI.UL.map(num => (
-                <Tooth key={num} num={num} isSelected={selectedTeeth.includes(num)} onClick={handleToothClick} condition={existingConditions[num]} />
-              ))}
-            </div>
-          )}
           
-          {showUpperRow && showLowerRow && <div style={{ height: '40px' }}></div>}
-          
-          {showLowerRow && (
-            <div className={styles.archRow}>
-              {showLR && currentFDI.LR.map(num => (
-                <Tooth key={num} num={num} isSelected={selectedTeeth.includes(num)} onClick={handleToothClick} condition={existingConditions[num]} />
-              ))}
-              {showLR && showLL && <div style={{ width: '40px' }} />} {/* Midline gap */}
-              {showLL && currentFDI.LL.map(num => (
-                <Tooth key={num} num={num} isSelected={selectedTeeth.includes(num)} onClick={handleToothClick} condition={existingConditions[num]} />
-              ))}
+          {/* UPPER JAW / MAXILLARY ARCH */}
+          <div className={styles.jawSection}>
+            <div className={styles.archLabelRow}>
+              <span className={styles.archLabel}>Maxillary Arch (Upper Jaw)</span>
             </div>
-          )}
+
+            {/* Row 1: Adult Upper Teeth (UR 18..11, UL 21..28) */}
+            <div className={styles.archRow}>
+              <div className={styles.quadrantRight}>
+                {FDI_ADULT.UR.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+              <div className={styles.midlineSeparator} title="Midline" />
+              <div className={styles.quadrantLeft}>
+                {FDI_ADULT.UL.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2: Pediatric Upper Teeth (UR 55..51, UL 61..65) */}
+            <div className={styles.archRow} style={{ marginTop: '14px' }}>
+              <div className={styles.quadrantRight}>
+                {FDI_PRIMARY.UR.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+              <div className={styles.midlineSeparator} title="Midline" />
+              <div className={styles.quadrantLeft}>
+                {FDI_PRIMARY.UL.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Inter-arch Occlusal Separation */}
+          <div className={styles.occlusalPlaneDivider}>
+            <div className={styles.occlusalLine} />
+          </div>
+
+          {/* LOWER JAW / MANDIBULAR ARCH */}
+          <div className={styles.jawSection}>
+            {/* Row 3: Pediatric Lower Teeth (LR 85..81, LL 71..75) */}
+            <div className={styles.archRow}>
+              <div className={styles.quadrantRight}>
+                {FDI_PRIMARY.LR.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+              <div className={styles.midlineSeparator} title="Midline" />
+              <div className={styles.quadrantLeft}>
+                {FDI_PRIMARY.LL.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Row 4: Adult Lower Teeth (LR 48..41, LL 31..38) */}
+            <div className={styles.archRow} style={{ marginTop: '14px' }}>
+              <div className={styles.quadrantRight}>
+                {FDI_ADULT.LR.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+              <div className={styles.midlineSeparator} title="Midline" />
+              <div className={styles.quadrantLeft}>
+                {FDI_ADULT.LL.map(num => (
+                  <Tooth 
+                    key={num} 
+                    num={num} 
+                    isSelected={selectedTeeth.includes(num)} 
+                    onClick={handleToothClick} 
+                    onDoubleClick={handleToothDoubleClick}
+                    condition={existingConditions[num]} 
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.archLabelRow} style={{ marginTop: '8px' }}>
+              <span className={styles.archLabel}>Mandibular Arch (Lower Jaw)</span>
+            </div>
+          </div>
         </div>
 
-        <div className={styles.legendBar}>
+        {/* Legend */}
+        <div className={styles.legendBar} style={{ marginTop: '28px' }}>
           <div className={styles.legendItem}>
             <span className={`${styles.legendBox} ${styles.legendBoxTaken}`}>✓</span>
             <span><strong>Treatment Taken Before</strong> (Purple)</span>
@@ -1233,11 +1343,12 @@ function OdontogramContent({ isWorkflowStep }) {
         </div>
       </div>
 
+      {/* Bottom Bar: Selection details & Actions */}
       <div className={styles.bottomBar}>
         {selectedTeeth.length > 0 && (
             <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <div style={{ padding: '0.75rem 1rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#334155', fontWeight: '600', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-                    <span>Selected Teeth: {selectedTeeth.length} </span>
+                    <span>Selected Teeth: {selectedTeeth.length}</span>
                     <span style={{ color: '#94a3b8', margin: '0 0.5rem' }}>|</span> 
                     {selectedTeeth.map(t => {
                         const isRem = existingConditions[t] === 'Teeth Removed';
@@ -1255,8 +1366,17 @@ function OdontogramContent({ isWorkflowStep }) {
                               gap: '0.25rem' 
                             }}
                           >
-                              {t} {isRem ? '(Removed)' : ''}
-                              <button onClick={() => handleToothClick(t)} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&times;</button>
+                              #{t} {isRem ? '(Removed)' : ''}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToothClick(t, e);
+                                }} 
+                                style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                title={`Deselect tooth #${t}`}
+                              >
+                                &times;
+                              </button>
                           </span>
                         );
                     })}
@@ -1264,46 +1384,75 @@ function OdontogramContent({ isWorkflowStep }) {
 
                 {removedSelectedTeeth.length > 0 && (
                   <button 
-                      onClick={() => setSelectedTeeth(prev => prev.filter(t => existingConditions[t] !== 'Teeth Removed'))}
+                      onClick={() => {
+                        setSelectedTeeth(prev => {
+                          const next = prev.filter(t => existingConditions[t] !== 'Teeth Removed');
+                          if (patientId) {
+                            try {
+                              localStorage.setItem(`ashdent_selected_teeth_${patientId}`, JSON.stringify(next));
+                            } catch(e) {}
+                          }
+                          return next;
+                        });
+                      }}
                       style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '500', cursor: 'pointer' }}
                       title="Exclude removed teeth from routine treatment selection"
                   >
                       Exclude Removed Teeth
                   </button>
                 )}
+
+                {selectedTeeth.length === 1 && (
+                  <button 
+                    onClick={() => {
+                      setSelectedType('tooth');
+                      setSelectedValue(selectedTeeth[0]);
+                      setIsModalOpen(true);
+                    }}
+                    style={{ background: 'white', border: '1px solid #6366f1', color: '#6366f1', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Open detailed anatomical views and tooth inspection"
+                  >
+                    <span>🔍</span> Tooth #{selectedTeeth[0]} Details & Anatomy
+                  </button>
+                )}
                 
                 <button 
                     onClick={() => {
                       if (selectedTeeth.length === 1) {
-                        setIsModalOpen(true);
+                        setSelectedType('tooth');
+                        setSelectedValue(selectedTeeth[0]);
                       } else {
-                        setIsPanelOpen(true);
+                        setSelectedType('custom');
                       }
+                      setIsPanelOpen(true);
                     }}
-                    style={{ background: 'white', border: '1px solid #14b8a6', color: '#14b8a6', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}
+                    style={{ background: 'white', border: '1px solid #14b8a6', color: '#14b8a6', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
                 >
-                    Treatment Plan for Selected Teeth
+                    Treatment Plan for Selected Teeth ({selectedTeeth.length})
                 </button>
                 
                 <button 
-                    onClick={() => {
-                        setSelectedTeeth([]);
-                    }}
+                    onClick={handleClearSelection}
                     style={{ background: 'white', border: '1px solid #ef4444', color: '#ef4444', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}
                 >
                     Clear Selection
                 </button>
             </div>
         )}
-        <button className={styles.btnPrimary} style={{ marginLeft: selectedTeeth.length === 0 ? 'auto' : '0' }} onClick={handleSaveAndContinue}>Save & Continue</button>
+        <button 
+          className={styles.btnPrimary} 
+          style={{ marginLeft: selectedTeeth.length === 0 ? 'auto' : '0' }} 
+          onClick={handleSaveAndContinue}
+        >
+          Save & Continue
+        </button>
       </div>
 
-      {/* Multi-Select Side Panel */}
-      <div className={`${styles.panelOverlay} ${isPanelOpen ? styles.open : ''}`} onClick={handleClosePanel}></div>
+      {/* Multi-Select / Treatment Planning Side Panel (Non-blocking: chart remains interactive) */}
       <div className={`${styles.sidePanel} ${isPanelOpen ? styles.open : ''}`}>
         <div className={styles.panelHeader}>
           <div className={styles.panelTitle}>{getPanelTitle()}</div>
-          <button className={styles.closeBtn} onClick={handleClosePanel}>&times;</button>
+          <button className={styles.closeBtn} onClick={handleClosePanel} title="Close panel">&times;</button>
         </div>
         
         <div className={styles.panelContent}>
@@ -1322,11 +1471,11 @@ function OdontogramContent({ isWorkflowStep }) {
             </div>
           )}
 
-          {plannedTreatments.filter(pt => selectedTeeth.includes(parseInt(pt.tooth))).length > 0 && (
+          {plannedTreatments.filter(pt => selectedTeeth.includes(parseInt(pt.tooth, 10))).length > 0 && (
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <h4 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Added Treatments</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {plannedTreatments.filter(pt => selectedTeeth.includes(parseInt(pt.tooth))).map(pt => (
+                {plannedTreatments.filter(pt => selectedTeeth.includes(parseInt(pt.tooth, 10))).map(pt => (
                   <div key={pt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: '#0f172a' }}>
                     <div>
                       <strong style={{ display: 'block', color: '#0ea5e9' }}>{pt.treatment}</strong>
@@ -1355,7 +1504,7 @@ function OdontogramContent({ isWorkflowStep }) {
                     className={styles.panelToothImg} 
                     style={{ transform: [3, 4, 7, 8].includes(Math.floor(selectedValue / 10)) ? 'scaleY(-1)' : 'none' }}
                   />
-                  <div className={styles.panelToothNumber}>{selectedValue}</div>
+                  <div className={styles.panelToothNumber}>#{selectedValue}</div>
                 </div>
               )}
               {selectedType === 'custom' && selectedTeeth.length > 1 && (
@@ -1366,7 +1515,7 @@ function OdontogramContent({ isWorkflowStep }) {
                     style={{ width: '48px', height: 'auto', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))', transform: [3, 4, 7, 8].includes(Math.floor(selectedTeeth[0] / 10)) ? 'scaleY(-1)' : 'none' }}
                   />
                   <div style={{ background: '#f8fafc', padding: '0.5rem 1.25rem', borderRadius: '9999px', fontWeight: '700', color: '#0f172a', border: '1px solid #e2e8f0', fontSize: '1.1rem', letterSpacing: '1px' }}>
-                    {selectedTeeth.join(', ')}
+                    {selectedTeeth.map(t => `#${t}`).join(', ')}
                   </div>
                 </div>
               )}
@@ -1433,7 +1582,7 @@ function OdontogramContent({ isWorkflowStep }) {
         </div>
       </div>
 
-      {/* Centered Tooth Detail Modal */}
+      {/* Centered Tooth Detail Modal (Preserves anatomical views & details) */}
       <ToothDetailModal
         isOpen={isModalOpen}
         onClose={handleClosePanel}

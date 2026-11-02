@@ -43,7 +43,8 @@ export function BranchProvider({ children }) {
           // Verify current activeBranch is valid in returned authorized branches
           setActiveBranch(prev => {
             const match = prev ? data.find(b => String(b.id) === String(prev.id)) : null
-            const chosen = match || data[0]
+            const defaultBranch = data.find(b => b.code === 'MAIN' || b.name === 'Main Branch' || b.company_name === 'AshDent Healthcare') || data[0]
+            const chosen = match || defaultBranch
             localStorage.setItem('ashdent_active_branch', JSON.stringify(chosen))
 
             const comp = {

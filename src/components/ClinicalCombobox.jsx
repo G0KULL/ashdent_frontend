@@ -10,7 +10,8 @@ export default function ClinicalCombobox({
   allowCustom = true,
   customTypeLabel = "Option",
   extraContent = null,
-  required = false
+  required = false,
+  compact = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -62,7 +63,7 @@ export default function ClinicalCombobox({
   };
 
   return (
-    <div className={styles.comboboxWrapper} ref={wrapperRef}>
+    <div className={`${styles.comboboxWrapper} ${compact ? styles.compact : ''}`} ref={wrapperRef}>
       {label && (
         <label className={styles.comboboxLabel}>
           <span>{label} {required && <strong style={{ color: '#ef4444' }}>*</strong>}</span>

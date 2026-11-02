@@ -1,3 +1,4 @@
+import InvestigationsSection from './investigations/InvestigationsSection';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import styles from './ConsultationPage.module.css';
@@ -628,15 +629,7 @@ export default function ConsultationPage() {
             )}
 
             {activeTab === 'Investigations' && (
-              <div className={styles.card}>
-                <h2>Investigations & Imaging</h2>
-                <div style={{ border: '2px dashed var(--border-light)', borderRadius: 'var(--radius-card)', padding: '40px', textAlign: 'center', background: 'var(--bg-hover)' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '12px' }}>📸</div>
-                  <div style={{ fontWeight: '600', marginBottom: '8px' }}>Drag and Drop X-Rays / Reports here</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Supported: IOPA, RVG, OPG, CBCT, PDF</div>
-                  <button className={styles.btnSecondary}>Browse Files</button>
-                </div>
-              </div>
+              <InvestigationsSection patient={patient} />
             )}
 
             {activeTab === 'Clinical Notes' && (

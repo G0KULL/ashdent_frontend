@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE, getHeaders } from '../utils/api';
 import styles from './SearchPatient.module.css';
 import PrescriptionModal from './PrescriptionModal';
-
-const API_BASE = 'http://127.0.0.1:8000/api';
-
-function getHeaders() {
-  const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
-  return { 'Content-Type': 'application/json', 'X-User-Id': user.id || '' };
-}
 
 export default function PatientProfileLaboratory({ viewPatient }) {
   const [labOrders, setLabOrders] = useState([]);
@@ -15,23 +9,22 @@ export default function PatientProfileLaboratory({ viewPatient }) {
   const [showAddLab, setShowAddLab] = useState(false);
 
   const fetchOrders = () => {
-    if (!viewPatient?.id) return;
     setLoading(true);
-    fetch(`${API_BASE}/patient/${viewPatient.id}/lab-orders/`, { headers: getHeaders() })
-      .then(r => r.ok ? r.json() : [])
+    fetch(`${API_BASE}/laboratory/list/?patient=${viewPatient?.id}`, { headers: getHeaders() })
+      .then(res => res.json())
       .then(data => setLabOrders(Array.isArray(data) ? data : []))
-      .catch(console.error)
+      .catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, [viewPatient]);
+    if (viewPatient?.id) fetchOrders();
+  }, [viewPatient?.id]);
 
   return (
     <div className={styles.treatmentsTabBody}>
       <div className={styles.treatmentActionsRow}>
-        <h3 style={{ margin: 0, fontSize: 16, color: 'var(--slate-900)' }}>Laboratory Orders</h3>
+        <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Laboratory Orders</h3>
         <button 
           onClick={() => setShowAddLab(true)}
           style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}

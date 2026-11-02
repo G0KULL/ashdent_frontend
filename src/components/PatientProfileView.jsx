@@ -1,4 +1,18 @@
+import InvestigationsSection from './investigations/InvestigationsSection'
+import React, { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { calcAgeFromDob, calcDobFromAge } from './AddPatient'
+import PatientProfileAppointment from './PatientProfileAppointment'
+import PatientTreatmentHistoryTab from './PatientTreatmentHistoryTab'
+import PatientProfileTreatment from './PatientProfileTreatment'
+import PatientProfilePrescription from './PatientProfilePrescription'
+import PatientProfileInvoice from './PatientProfileInvoice'
+import PatientProfileLaboratory from './PatientProfileLaboratory'
+import PatientProfileWhatsApp from './PatientProfileWhatsApp'
+import PatientProfileGmail from './PatientProfileGmail'
+import ClinicalNotesModal from './ClinicalNotesModal'
+import { API_BASE, getHeaders } from '../utils/api'
+import styles from './SearchPatient.module.css'
 
 function EditPatientModal({ patient, onClose, onSaved }) {
   const [formData, setFormData] = useState({
@@ -70,9 +84,9 @@ function EditPatientModal({ patient, onClose, onSaved }) {
         address: formData.address || null,
         pincode: formData.pincode || null,
       }
-      const res = await fetch(`http://127.0.0.1:8000/api/patient/${patient.id}/profile/`, {
+      const res = await fetch(`${API_BASE}/patient/${patient.id}/profile/`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(payload)
       })
       if (res.ok) {
@@ -160,20 +174,26 @@ function getInitials(name) {
 
 export default function PatientProfileView({
   viewPatient, profile, profileLoading, patientName, patientPhone,
-  closeProfile, refreshProfile, onNavigate
+  closeProfile, refreshProfile, onNavigate, initialTab: propInitialTab,
+  openPrescription
 }) {
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState(location.state?.initialTab || 'general')
+  const [activeTab, setActiveTab] = useState(() => {
+    const init = (propInitialTab || location.state?.initialTab || 'overview').toLowerCase()
+    if (!init || init === 'general') return 'overview'
+    return init
+  })
   const [showNotes, setShowNotes] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
 
-  // Sync initial tab when location state changes
+  // Sync initial tab when prop or location state changes
   useEffect(() => {
-    if (location.state?.initialTab) {
-      setActiveTab(location.state.initialTab)
+    const init = (propInitialTab || location.state?.initialTab)?.toLowerCase()
+    if (init) {
+      setActiveTab(init === 'general' ? 'overview' : init)
     }
-  }, [location.state?.initialTab])
+  }, [propInitialTab, location.state?.initialTab])
 
   const patData = profile?.patient || viewPatient
   const totalBalance = parseFloat(profile?.total_balance || 0)
@@ -369,18 +389,84 @@ export default function PatientProfileView({
           
           {activeTab === 'clinical notes' && (
             <div className={styles.treatmentsTabBody}>
-              <div className={styles.treatmentActionsRow}>
-                <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Clinical Notes</h3>
-                <button className={styles.addBtn} onClick={() => setShowNotes('new')}>+ Add Note</button>
+              <div className={styles.treatmentActionsRow} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div>
+                  <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Clinical Notes</h3>
+                  <p style={{ color: '#64748b', fontSize: 13, margin: '4px 0 0 0' }}>Consultation history and clinical findings for {patData.name || patientName}</p>
+                </div>
+                <button className={styles.addBtn} onClick={() => setShowNotes('new')} style={{ padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}>+ Add Clinical Note</button>
               </div>
-              <p style={{ color: '#64748b' }}>View past notes or add new ones by clicking above.</p>
+
+              {(() => {
+                const notesList = (profile?.appointments || []).filter(a => a.clinical_notes);
+                if (notesList.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '32px 16px', background: '#f8fafc', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
+                      <p style={{ color: '#64748b', margin: 0, fontWeight: 500 }}>No clinical notes recorded yet for this patient.</p>
+                      <button className={styles.addBtn} onClick={() => setShowNotes('new')} style={{ marginTop: 12, padding: '6px 14px', borderRadius: 6 }}>Create First Clinical Note</button>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {notesList.map((appt) => {
+                      const cn = appt.clinical_notes;
+                      return (
+                        <div key={appt.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                              <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 14 }}>{appt.date} · {appt.time_formatted || appt.time}</span>
+                              <span style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4 }}>{appt.doctor_name || 'Doctor'}</span>
+                            </div>
+                            {cn.chief_complaint && (
+                              <p style={{ margin: '4px 0', fontSize: 13, color: '#334155' }}>
+                                <strong>Chief Complaint:</strong> {cn.chief_complaint}
+                              </p>
+                            )}
+                            {cn.diagnosis && (Array.isArray(cn.diagnosis) ? cn.diagnosis.length > 0 : Boolean(cn.diagnosis)) && (
+                              <p style={{ margin: '4px 0', fontSize: 13, color: '#334155' }}>
+                                <strong>Diagnosis:</strong> {Array.isArray(cn.diagnosis) ? cn.diagnosis.join(', ') : cn.diagnosis}
+                              </p>
+                            )}
+                            {cn.selected_teeth && cn.selected_teeth.length > 0 && (
+                              <p style={{ margin: '4px 0', fontSize: 13, color: '#334155' }}>
+                                <strong>Teeth:</strong> {Array.isArray(cn.selected_teeth) ? cn.selected_teeth.join(', ') : cn.selected_teeth}
+                              </p>
+                            )}
+                            {cn.notes && (
+                              <p style={{ margin: '4px 0', fontSize: 12, color: '#64748b' }}>
+                                <strong>Notes:</strong> {cn.notes}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setShowNotes(appt.id)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              border: '1px solid #cbd5e1',
+                              background: '#f8fafc',
+                              color: '#2563eb',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Edit Note
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {activeTab === 'medical history' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
           {activeTab === 'dental history' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
           {activeTab === 'dental chart' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
-          {activeTab === 'rvg / x-rays' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
+          {activeTab === 'rvg / x-rays' && <InvestigationsSection patient={viewPatient || profile?.patient} showHistoryByDefault={true} />}
           {activeTab === 'follow-ups' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
 
           {/* Legacy Tabs for compatibility */}

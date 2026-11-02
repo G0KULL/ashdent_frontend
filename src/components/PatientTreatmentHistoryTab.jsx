@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './SearchPatient.module.css';
+import { API_BASE, getHeaders } from '../utils/api';
 
 export default function PatientTreatmentHistoryTab({ patientId }) {
   const [history, setHistory] = useState([]);

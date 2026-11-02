@@ -111,6 +111,78 @@
   gap: 8px;
 }
 
+.jawSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.archLabelRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 4px 0 8px 0;
+}
+
+.archLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.quadrantRight {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  width: 472px;
+  min-width: 472px;
+}
+
+.quadrantLeft {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  width: 472px;
+  min-width: 472px;
+}
+
+.midlineSeparator {
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.midlineSeparator::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  left: 50%;
+  width: 1px;
+  border-left: 1px dashed #cbd5e1;
+}
+
+.occlusalPlaneDivider {
+  width: 100%;
+  max-width: 1020px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.occlusalLine {
+  width: 100%;
+  border-top: 1.5px dashed #cbd5e1;
+}
+
 /* --- TOOTH HOVER INTERACTION --- */
 .toothItem {
   display: flex;
@@ -382,18 +454,7 @@
 
 /* ── Multi-Select Side Panel ── */
 .panelOverlay {
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: 1010;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.panelOverlay.open {
-  opacity: 1;
-  visibility: visible;
+  display: none !important;
 }
 
 .sidePanel {
@@ -633,111 +694,161 @@
   font-weight: 600;
 }
 
-/* ── CENTERED TOOTH DETAIL MODAL STYLES ── */
+/* ── CENTERED TOOTH DETAIL MODAL STYLES (COMPACT CLINICAL REDESIGN) ── */
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 2000;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 2100;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  animation: fadeIn 200ms ease;
+  padding: 1rem;
+  animation: modalFadeIn 180ms ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes modalFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 .modalContainer {
   background: #ffffff;
-  width: 92%;
-  max-width: 960px;
-  max-height: 90vh;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: min(900px, 94vw);
+  max-width: 920px;
+  height: min(625px, 92vh);
+  max-height: 635px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: scaleUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  animation: modalScaleUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
+@keyframes modalScaleUp {
+  from { transform: scale(0.97); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
+/* ── Modal Header ── */
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.75rem;
+  padding: 0.65rem 1.15rem;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
+  min-height: 48px;
+  flex-shrink: 0;
 }
 
 .modalTitleBlock {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .modalTitleBadge {
-  background: #1e293b;
-  color: white;
-  font-size: 1rem;
-  font-weight: 700;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
-  letter-spacing: 0.5px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.modalTitleTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modalTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .modalTitle {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #0f172a;
+  line-height: 1.25;
+}
+
+.jawBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.quadBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .modalSubtitle {
-  font-size: 0.825rem;
+  font-size: 0.72rem;
   color: #64748b;
-  margin-top: 2px;
+  font-weight: 500;
 }
 
 .modalHeaderActions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .statusPill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 9999px;
-  font-size: 0.825rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  border: 1px solid currentColor;
+  white-space: nowrap;
 }
 
 .statusPillIcon {
   font-weight: 700;
+  font-size: 0.75rem;
 }
 
 .modalCloseBtn {
   background: transparent;
   border: none;
-  font-size: 1.75rem;
+  font-size: 1.3rem;
   line-height: 1;
   color: #94a3b8;
   cursor: pointer;
   border-radius: 6px;
-  padding: 2px 8px;
-  transition: all 0.2s;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .modalCloseBtn:hover {
@@ -745,63 +856,97 @@
   background: #fee2e2;
 }
 
-/* Modal Body Grid Layout: 2 Columns on Desktop */
+/* ── Modal Body Grid: 2 Columns ── */
 .modalBody {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.15fr 0.85fr;
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  min-height: 0;
 }
 
+/* Left Panel: Examination & Treatments */
 .modalLeftPanel {
-  padding: 1.5rem 1.75rem;
+  padding: 0.85rem 1.15rem;
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.55rem;
   background: #ffffff;
+  overflow-y: auto;
 }
 
+/* Right Panel: Tooth Illustration & Facts */
 .modalRightPanel {
-  padding: 1.5rem 1.75rem;
+  padding: 0.85rem 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.55rem;
   background: #f8fafc;
+  overflow-y: auto;
 }
 
 .sectionHeader {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #475569;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.15rem 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Removed Warning Banner */
+.removedWarningBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.725rem;
+  color: #991b1b;
+  line-height: 1.35;
+}
+
+.removedWarningTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.fieldRow {
+  margin-bottom: 0;
 }
 
 /* Quick Condition Row */
 .quickConditionRow {
   display: flex;
-  gap: 0.65rem;
-  margin-bottom: 0.5rem;
+  gap: 0.45rem;
+  margin-bottom: 0.1rem;
 }
 
 .condBtn {
   flex: 1;
-  background: #f1f5f9;
+  background: #f8fafc;
   border: 1px solid #cbd5e1;
   color: #475569;
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
+  text-align: center;
 }
 
 .condBtn:hover {
-  background: #e2e8f0;
+  background: #f1f5f9;
   color: #0f172a;
+  border-color: #94a3b8;
 }
 
 .condActiveRemove {
@@ -820,98 +965,143 @@
 .addedTreatmentsCard {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  padding: 0.85rem;
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
 }
 
 .cardHeaderTitle {
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #1e40af;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
-.addedTxRow {
+.addedTreatmentItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  margin-top: 0.4rem;
+  background: #ffffff;
+  padding: 0.3rem 0.55rem;
+  border-radius: 5px;
+  margin-top: 0.25rem;
   border: 1px solid #dbeafe;
+  font-size: 0.76rem;
 }
 
-.txName {
+.addedTreatmentInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.addedTreatmentTitle {
   font-weight: 700;
   color: #1d4ed8;
-  font-size: 0.875rem;
-}
-
-.txCategory {
   font-size: 0.78rem;
-  color: #64748b;
+  white-space: nowrap;
 }
 
-.txRemoveBtn {
+.addedTreatmentMeta {
+  font-size: 0.7rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removePtBtn {
   background: none;
   border: none;
   color: #ef4444;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  line-height: 1;
   cursor: pointer;
   padding: 0 4px;
+  flex-shrink: 0;
 }
 
-/* Surface Section inside Modal */
-.surfaceSection {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.85rem;
-}
-
-.surfaceSelectorBox {
+/* Quick Suggestion Chips */
+.suggestions {
   display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-top: 0.4rem;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.25rem;
 }
 
-.surfaceLabels {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.78rem;
-  color: #475569;
-}
-
-/* Clinical History inside Modal */
-.historyCard {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.85rem;
-}
-
-.historyRow {
-  font-size: 0.825rem;
+.suggestionChip {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: #f1f5f9;
   color: #334155;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.historyRow:last-child {
-  border-bottom: none;
+.suggestionChip:hover {
+  background: #e0e7ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
 }
 
-/* View Switcher Tabs */
-.viewTabs {
+/* Surfaces Block */
+.surfacesBlock {
+  margin-top: 0.15rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.surfaceButtonGroup {
+  display: flex;
+  gap: 4px;
+}
+
+.surfaceBtn {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.35rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.surfaceBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.surfaceBtnActive {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+/* ── Right Panel: Anatomy & View Inspection ── */
+.viewTabsRow {
   display: flex;
   background: #e2e8f0;
-  border-radius: 8px;
-  padding: 3px;
+  border-radius: 6px;
+  padding: 2px;
   gap: 2px;
 }
 
@@ -919,141 +1109,230 @@
   flex: 1;
   background: transparent;
   border: none;
-  padding: 0.45rem 0.5rem;
-  font-size: 0.8rem;
+  padding: 0.32rem 0.45rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #64748b;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   text-align: center;
 }
 
-.viewTabActive {
-  background: #ffffff;
-  color: #2563eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+.viewTabBtn:hover {
+  color: #0f172a;
 }
 
-/* Large Central Tooth Display */
-.largeToothDisplay {
+.viewTabBtnActive {
+  background: #ffffff !important;
+  color: #2563eb !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Realistic Tooth Illustration Viewport (Properly Constrained) */
+.illustrationViewport {
+  height: 115px;
+  max-height: 115px;
+  min-height: 115px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  height: 200px;
+  border-radius: 8px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.viewBadge {
-  position: absolute;
-  top: 10px;
-  left: 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #2563eb;
-  background: #eff6ff;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  border: 1px solid #bfdbfe;
-}
-
-.largeToothImg {
-  height: 130px;
+.modalToothImg {
+  max-height: 80px;
+  max-width: 80px;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));
-  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
+  transition: transform 250ms ease;
+  image-rendering: auto;
 }
 
-.largeToothNumLabel {
+.activeViewBadge {
   position: absolute;
-  bottom: 8px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #64748b;
+  top: 6px;
+  right: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Info & Measurements Cards */
-.infoCard {
+/* Periodontal & Mobility Parameters */
+.measurementsCard {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 1rem;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
 }
 
-.infoCardTitle {
-  font-size: 0.825rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #0f172a;
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.infoGrid {
+.measurementsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
 }
 
-.infoItem {
+.measurementItem {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  background: #f8fafc;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.measureLabel {
+  font-size: 0.64rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.measureVal {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Tooth Specifications & Anatomy */
+.anatomyCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+}
+
+.anatomyRows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 10px;
+}
+
+.anatomyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.72rem;
+  padding: 2px 0;
+  border-bottom: 1px solid #f8fafc;
 }
 
 .infoKey {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #64748b;
 }
 
 .infoVal {
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #0f172a;
 }
 
-.infoValNotRec {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #94a3b8;
-  font-style: italic;
+/* Recorded Patient History */
+.historyCardModal {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
 }
 
-.notRecNote {
-  font-size: 0.725rem;
-  color: #94a3b8;
-  font-style: italic;
-  margin-top: 0.65rem;
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 90px;
+  overflow-y: auto;
 }
 
-/* Modal Footer */
+.historyListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  padding: 3px 6px;
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+}
+
+/* ── Modal Footer ── */
 .modalFooter {
-  padding: 1rem 1.75rem;
+  padding: 0.6rem 1.15rem;
   border-top: 1px solid #e2e8f0;
   background: #ffffff;
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  min-height: 46px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-/* Responsive Modal Layout */
+.btnSecondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.35rem 0.95rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnSecondary:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btnPrimary {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #ffffff;
+  padding: 0.35rem 1.15rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.btnPrimary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* ── Responsive Modal Layout ── */
 @media (max-width: 767px) {
+  .modalContainer {
+    width: 95vw;
+    height: 94vh;
+    max-height: 94vh;
+  }
   .modalBody {
     grid-template-columns: 1fr;
+    overflow-y: auto;
   }
   .modalLeftPanel {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
-  }
-  .modalContainer {
-    width: 95%;
-    max-height: 95vh;
   }
 }

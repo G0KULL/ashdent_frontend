@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from "./SearchPatient.module.css";
-
-const API_BASE = "http://127.0.0.1:8000/api";
-
-function getHeaders() {
-  const user = JSON.parse(localStorage.getItem("ashdent_user") || localStorage.getItem("doctosmart_user") || "{}");
-  return {
-    "Content-Type": "application/json",
-    "X-User-Id": user.id || "",
-  };
-}
 
 const printPdf = async (url) => {
   try {

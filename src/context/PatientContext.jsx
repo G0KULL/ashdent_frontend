@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { API_BASE, getHeaders } from '../utils/api'
 
 const PatientContext = createContext(null)
 
@@ -17,7 +18,7 @@ export function PatientProvider({ children }) {
 
   const fetchPatients = useCallback(async (query = '', date = '') => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/patient/search/?q=${encodeURIComponent(query)}&date=${date}`)
+      const res = await fetch(`${API_BASE}/patient/search/?q=${encodeURIComponent(query)}&date=${date}`, { headers: getHeaders() })
       const data = await res.json()
       if (Array.isArray(data)) {
         setPatients(data.map(p => ({

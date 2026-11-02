@@ -22,6 +22,7 @@ export default function MastersManager() {
   const [diagnoses, setDiagnoses] = useState([])
   const [examinations, setExaminations] = useState([])
   const [toothConditions, setToothConditions] = useState([])
+  const [investigations, setInvestigations] = useState([])
 
   // Modal & Form States
   const [showModal, setShowModal] = useState(false)
@@ -58,7 +59,7 @@ export default function MastersManager() {
     setLoading(true)
     try {
       const authHeaders = getAuthHeaders()
-      const [ptRes, slRes, desRes, roleRes, permRes, discRes, pkgRes, subRes, txRes, dxRes, exRes, tcRes] = await Promise.all([
+      const [ptRes, slRes, desRes, roleRes, permRes, discRes, pkgRes, subRes, txRes, dxRes, exRes, tcRes, invRes] = await Promise.all([
         fetch(`${API}/masters/patient-types/`, { headers: authHeaders }),
         fetch(`${API}/masters/staff-levels/`, { headers: authHeaders }),
         fetch(`${API}/masters/designations/`, { headers: authHeaders }),
@@ -71,6 +72,7 @@ export default function MastersManager() {
         fetch(`${API}/masters/diagnoses/`, { headers: authHeaders }),
         fetch(`${API}/masters/examinations/`, { headers: authHeaders }),
         fetch(`${API}/masters/tooth-conditions/`, { headers: authHeaders }),
+        fetch(`${API}/masters/investigations/?include_inactive=true`, { headers: authHeaders }),
       ])
 
       if (ptRes.ok) setPatientTypes(await ptRes.json())
@@ -85,6 +87,7 @@ export default function MastersManager() {
       if (dxRes.ok) setDiagnoses(await dxRes.json())
       if (exRes.ok) setExaminations(await exRes.json())
       if (tcRes.ok) setToothConditions(await tcRes.json())
+      if (invRes && invRes.ok) setInvestigations(await invRes.json())
     } catch (err) {
       console.error("Failed to load masters data:", err)
       showToastMsg("Failed to connect to Masters backend API", "error")
@@ -96,7 +99,7 @@ export default function MastersManager() {
   const handleToggleActive = async (endpoint, item) => {
     try {
       const res = await fetch(`${API}/masters/${endpoint}/${item.id}/`, {
-        method: 'PUT',
+        method: endpoint === 'investigations' ? 'PATCH' : 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ is_active: !item.is_active })
       })
@@ -145,9 +148,10 @@ export default function MastersManager() {
     else if (modalType === 'diagnosis') endpoint = 'diagnoses'
     else if (modalType === 'examination') endpoint = 'examinations'
     else if (modalType === 'tooth-condition') endpoint = 'tooth-conditions'
+    else if (modalType === 'investigation') endpoint = 'investigations'
 
     const url = editItem ? `${API}/masters/${endpoint}/${editItem.id}/` : `${API}/masters/${endpoint}/`
-    const method = editItem ? 'PUT' : 'POST'
+    const method = editItem ? (modalType === 'investigation' ? 'PATCH' : 'PUT') : 'POST'
 
     try {
       const res = await fetch(url, {
@@ -278,6 +282,7 @@ export default function MastersManager() {
           { id: 'discounts', label: '🏷️ Discounts' },
           { id: 'packages', label: '🎁 Offer Packages' },
           { id: 'subscriptions', label: '📜 Subscriptions' },
+          { id: 'investigations', label: '🔬 Investigations' },
         ].map(t => (
           <button
             key={t.id}
@@ -310,6 +315,7 @@ export default function MastersManager() {
                 : activeTab === 'diagnoses' ? 'diagnosis'
                 : activeTab === 'examinations' ? 'examination'
                 : activeTab === 'tooth-conditions' ? 'tooth-condition'
+                : activeTab === 'investigations' ? 'investigation'
                 : activeTab.slice(0, -1);
               openCreateModal(mType);
             }}

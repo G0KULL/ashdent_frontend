@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import ClinicalNotesModal from '../components/ClinicalNotesModal';
 import PrescriptionModal from '../components/PrescriptionModal';
 import MedicationsSection from '../components/MedicationsSection';
+import InvestigationsSection from '../components/investigations/InvestigationsSection';
 import InvoicePreviewModal from '../components/InvoicePreviewModal';
 import ClinicalCombobox from '../components/ClinicalCombobox';
 
@@ -314,6 +315,7 @@ const PageContent = () => {
           </div>
           
           <MedicationsSection />
+          <InvestigationsSection patient={patient} />
         </div>
       </div>
 
