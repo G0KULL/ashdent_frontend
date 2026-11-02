@@ -11,7 +11,8 @@ export default function ClinicalCombobox({
   customTypeLabel = "Option",
   extraContent = null,
   required = false,
-  compact = false
+  compact = false,
+  multiple = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -20,6 +21,13 @@ export default function ClinicalCombobox({
 
   // Normalize options to string array
   const stringOptions = (options || []).map(opt => (typeof opt === 'string' ? opt : opt?.name || '')).filter(Boolean);
+
+  // Normalize multiple selected items
+  const selectedList = multiple
+    ? (Array.isArray(value) ? value : (value ? [value] : []))
+    : [];
+
+  const hasValue = multiple ? selectedList.length > 0 : Boolean(value);
 
   // Close when clicking outside
   useEffect(() => {
@@ -48,17 +56,35 @@ export default function ClinicalCombobox({
     opt => opt.toLowerCase() === trimmedSearch.toLowerCase()
   );
 
-  const canAddNew = allowCustom && trimmedSearch.length >= 2 && !isExactMatch;
+  const canAddNew = allowCustom && trimmedSearch.length >= 2 && !isExactMatch && (!multiple || !selectedList.includes(trimmedSearch));
 
   const handleSelect = (val) => {
-    onChange(val);
-    setIsOpen(false);
-    setSearch('');
+    if (!val) return;
+    if (multiple) {
+      const isSelected = selectedList.includes(val);
+      const updated = isSelected
+        ? selectedList.filter(item => item !== val)
+        : [...selectedList, val];
+      onChange(updated);
+      setSearch('');
+    } else {
+      onChange(val);
+      setIsOpen(false);
+      setSearch('');
+    }
+  };
+
+  const handleRemoveTag = (itemToRemove, e) => {
+    if (e) e.stopPropagation();
+    if (multiple) {
+      const updated = selectedList.filter(item => item !== itemToRemove);
+      onChange(updated);
+    }
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
-    onChange('');
+    onChange(multiple ? [] : '');
     setSearch('');
   };
 
@@ -78,18 +104,42 @@ export default function ClinicalCombobox({
         aria-expanded={isOpen}
       >
         <div className={styles.valueContainer}>
-          {value ? (
-            <>
-              <span className={styles.valueText}>{value}</span>
-              <span className={styles.masterBadge}>Master</span>
-            </>
+          {multiple ? (
+            selectedList.length > 0 ? (
+              <div className={styles.tagList}>
+                {selectedList.map((item, idx) => (
+                  <span key={idx} className={styles.tagItem}>
+                    <span className={styles.tagText}>{item}</span>
+                    <span className={styles.tagMasterBadge}>Master</span>
+                    <button
+                      type="button"
+                      className={styles.tagRemoveBtn}
+                      onClick={(e) => handleRemoveTag(item, e)}
+                      title={`Remove ${item}`}
+                      aria-label={`Remove ${item}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className={styles.placeholderText}>{placeholder}</span>
+            )
           ) : (
-            <span className={styles.placeholderText}>{placeholder}</span>
+            value ? (
+              <>
+                <span className={styles.valueText}>{value}</span>
+                <span className={styles.masterBadge}>Master</span>
+              </>
+            ) : (
+              <span className={styles.placeholderText}>{placeholder}</span>
+            )
           )}
         </div>
 
         <div className={styles.actionsContainer}>
-          {value && (
+          {hasValue && (
             <button
               type="button"
               className={styles.clearBtn}
@@ -157,20 +207,23 @@ export default function ClinicalCombobox({
               </div>
             )}
 
-            {filteredOptions.map((opt) => (
-              <div
-                key={opt}
-                className={`${styles.optionItem} ${value === opt ? styles.selectedOption : ''}`}
-                onClick={() => handleSelect(opt)}
-              >
-                <span>{opt}</span>
-                {value === opt && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-            ))}
+            {filteredOptions.map((opt) => {
+              const isSelected = multiple ? selectedList.includes(opt) : value === opt;
+              return (
+                <div
+                  key={opt}
+                  className={`${styles.optionItem} ${isSelected ? styles.selectedOption : ''}`}
+                  onClick={() => handleSelect(opt)}
+                >
+                  <span>{opt}</span>
+                  {isSelected && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
 
             {filteredOptions.length === 0 && !canAddNew && (
               <div className={styles.emptyState}>

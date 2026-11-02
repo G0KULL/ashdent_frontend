@@ -1056,6 +1056,16 @@ export default function UserManagement() {
     const handleFileUpload = (e) => {
       const file = e.target.files[0]
       if (!file) return
+      if (file.size === 0) {
+        alert("Selected file is empty (0 bytes). Please choose a valid file.")
+        e.target.value = ''
+        return
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        alert("File size exceeds 15MB limit. Please choose a smaller file.")
+        e.target.value = ''
+        return
+      }
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData({
@@ -1068,6 +1078,19 @@ export default function UserManagement() {
         })
       }
       reader.readAsDataURL(file)
+      e.target.value = ''
+    }
+
+    const handleRemoveDoc = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const updatedDetails = { ...details }
+      delete updatedDetails[`${docKey}_name`]
+      delete updatedDetails[`${docKey}_file`]
+      setFormData({
+        ...formData,
+        additional_details: updatedDetails
+      })
     }
 
     return (
@@ -1083,19 +1106,35 @@ export default function UserManagement() {
           style={{ display: 'none' }}
           id={`doc-${docKey}-${formType}`}
         />
-        <label
-          htmlFor={`doc-${docKey}-${formType}`}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '12px 14px', borderRadius: 10,
-            border: docName ? '1px solid #10b981' : '1px dashed #cbd5e1',
-            cursor: 'pointer', background: docName ? '#ecfdf5' : '#f8fafc',
-            color: docName ? '#047857' : '#64748b', fontSize: 13, fontWeight: '500',
-            transition: 'all 0.2s ease', textAlign: 'center'
-          }}
-        >
-          {docName ? `✅ ${docName}` : `📁 Choose ${label}`}
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label
+            htmlFor={`doc-${docKey}-${formType}`}
+            style={{
+              flex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px 14px', borderRadius: 10,
+              border: docName ? '1px solid #10b981' : '1px dashed #cbd5e1',
+              cursor: 'pointer', background: docName ? '#ecfdf5' : '#f8fafc',
+              color: docName ? '#047857' : '#64748b', fontSize: 13, fontWeight: '500',
+              transition: 'all 0.2s ease', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+            }}
+          >
+            {docName ? `✅ ${docName}` : `📁 Choose ${label}`}
+          </label>
+          {docName && (
+            <button
+              type="button"
+              onClick={handleRemoveDoc}
+              title="Remove file"
+              style={{
+                background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c',
+                borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
     )
   }

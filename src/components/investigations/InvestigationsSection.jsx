@@ -174,8 +174,20 @@ export default function InvestigationsSection({
 
   const handleFileChange = (e) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setSelectedFiles(prev => [...prev, ...newFiles]);
+      const validFiles = [];
+      Array.from(e.target.files).forEach(file => {
+        if (file.size === 0) {
+          alert(`File "${file.name}" is empty (0 bytes) and cannot be uploaded.`);
+          return;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          alert(`File "${file.name}" exceeds the 25MB limit.`);
+          return;
+        }
+        validFiles.push(file);
+      });
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+      e.target.value = '';
     }
   };
 

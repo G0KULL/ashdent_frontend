@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ExistingCaseSheet.module.css';
 import Sidebar from '../components/consultation/Sidebar';
@@ -8,6 +8,35 @@ import { Activity, Clock, Shield, Pill, Download, Image as ImageIcon } from 'luc
 
 const CaseSheetContent = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const [scans, setScans] = useState([
+    { name: 'IOPA_36_1.jpg', date: 'Oct 12, 2023' },
+    { name: 'IOPA_36_2.jpg', date: 'Oct 12, 2023' }
+  ]);
+
+  const handleScanUpload = (e) => {
+    if (e.target.files) {
+      const selected = Array.from(e.target.files);
+      const newItems = [];
+      selected.forEach(file => {
+        if (file.size === 0) {
+          alert(`File "${file.name}" is empty (0 bytes).`);
+          return;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          alert(`File "${file.name}" exceeds the 25MB limit.`);
+          return;
+        }
+        newItems.push({
+          name: file.name,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          url: URL.createObjectURL(file)
+        });
+      });
+      setScans(prev => [...prev, ...newItems]);
+      e.target.value = '';
+    }
+  };
 
   return (
     <div className={styles.pageWrapper}>
@@ -122,19 +151,47 @@ const CaseSheetContent = () => {
           {/* RVG Reports */}
           <div className={styles.card}>
             <h3 className={styles.sectionTitle}>RVG Reports & Attachments</h3>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button className={styles.btnSecondary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ImageIcon size={18}/> Upload X-Ray</button>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                multiple
+                accept=".pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={handleScanUpload}
+              />
+              <button 
+                type="button" 
+                className={styles.btnSecondary} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImageIcon size={18}/> Upload X-Ray
+              </button>
             </div>
             <div className={styles.uploadGrid}>
-              {[1, 2].map(i => (
-                <div key={i} className={styles.uploadItem}>
+              {scans.map((scan, i) => (
+                <div key={i} className={styles.uploadItem} style={{ position: 'relative' }}>
                   <div className={styles.uploadThumb}>
                     <ImageIcon size={32} />
                   </div>
-                  <div className={styles.uploadDetails}>
-                    <div style={{ fontWeight: '600', color: '#0f172a' }}>IOPA_36_{i}.jpg</div>
-                    <div style={{ color: '#64748b' }}>Oct 12, 2023</div>
+                  <div className={styles.uploadDetails} style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', color: '#0f172a' }}>{scan.name}</div>
+                    <div style={{ color: '#64748b', fontSize: '12px' }}>
+                      {scan.date}
+                      {scan.url && (
+                        <a href={scan.url} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#2563eb', fontWeight: 600 }}>Preview</a>
+                      )}
+                    </div>
                   </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setScans(scans.filter((_, idx) => idx !== i))}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700, padding: 4 }}
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>

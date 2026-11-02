@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './NewTreatmentCaseForm.module.css';
 import Sidebar from '../components/consultation/Sidebar';
@@ -260,13 +260,36 @@ const FormContent = ({ isWorkflowStep }) => {
 
           {/* Section 8: RVG Reports & Notes */}
           <Accordion title="8. RVG Reports & Notes" icon={ImageIcon}>
-            <div className={styles.uploadArea}>
+            <div className={styles.uploadArea} onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer' }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                multiple
+                accept=".pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={handleScanSelect}
+              />
               <Upload size={40} color="#64748b" />
               <div>
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a' }}>Upload RVG, X-ray, OPG, CBCT</h4>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b' }}>Drag & drop files or click to browse</p>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748b' }}>Supports PDF, JPG, PNG up to 25MB</p>
               </div>
-              <button className={styles.btnSecondary}>Select Files</button>
+              <button type="button" className={styles.btnSecondary} onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                Select Files
+              </button>
+              {uploadedScans.length > 0 && (
+                <div style={{ width: '100%', marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                  {uploadedScans.map((scan, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}>
+                      <span>📎 {scan.name} ({scan.size})</span>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <a href={scan.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600 }}>Preview</a>
+                        <button type="button" onClick={() => setUploadedScans(uploadedScans.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Accordion>
 

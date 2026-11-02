@@ -157,7 +157,8 @@ const DropdownSelect = ({
   allowCustom = true,
   customTypeLabel = "Option",
   required = false,
-  compact = false
+  compact = false,
+  multiple = false
 }) => (
   <ClinicalCombobox
     label={label}
@@ -170,6 +171,7 @@ const DropdownSelect = ({
     extraContent={extraContent}
     required={required}
     compact={compact}
+    multiple={multiple}
   />
 );
 
@@ -221,9 +223,10 @@ const Tooth = React.memo(({ num, isSelected, onClick, onDoubleClick, condition }
   const isLower = [3, 4, 7, 8].includes(Math.floor(num / 10));
   const meta = getToothMetadata(num);
   
-  const isTaken = condition === 'Treatment Taken Before';
-  const isRemoved = condition === 'Teeth Removed';
-  const isRecommended = condition === 'Recommended To Take Treatment';
+  const condList = Array.isArray(condition) ? condition : (condition ? [condition] : []);
+  const isTaken = condList.includes('Treatment Taken Before');
+  const isRemoved = condList.includes('Teeth Removed');
+  const isRecommended = condList.includes('Recommended To Take Treatment') || condList.some(c => c && c !== 'Healthy');
 
   let wrapperStatusClass = '';
   if (isTaken) wrapperStatusClass = styles.wrapperTaken;
@@ -328,13 +331,34 @@ const ToothDetailModal = ({
   const meta = getToothMetadata(toothNum);
   const isLower = [3, 4, 7, 8].includes(Math.floor(toothNum / 10));
 
+  const condList = Array.isArray(condition) ? condition : (condition ? [condition] : []);
+  const isTaken = condList.includes('Treatment Taken Before');
+  const isRemoved = condList.includes('Teeth Removed');
+  const isRecommended = condList.includes('Recommended To Take Treatment');
+
+  const diagList = Array.isArray(diagnosis) ? diagnosis : (diagnosis ? [diagnosis] : []);
+  const txList = Array.isArray(treatment) ? treatment : (treatment ? [treatment] : []);
+  const examList = Array.isArray(examination) ? examination : (examination ? [examination] : []);
+
+  const toggleDiagnosis = (item) => {
+    const next = diagList.includes(item) ? diagList.filter(d => d !== item) : [...diagList, item];
+    setDiagnosis(next);
+  };
+
+  const toggleTreatment = (item) => {
+    const next = txList.includes(item) ? txList.filter(t => t !== item) : [...txList, item];
+    setTreatment(next);
+  };
+
   let statusBadge = { label: 'Healthy / No Treatment', color: '#10b981', bg: '#dcfce7', icon: '○' };
-  if (condition === 'Treatment Taken Before') {
+  if (isTaken) {
     statusBadge = { label: 'Treatment Taken Before', color: '#a855f7', bg: '#f3e8ff', icon: '✓' };
-  } else if (condition === 'Teeth Removed') {
+  } else if (isRemoved) {
     statusBadge = { label: 'Tooth Removed', color: '#64748b', bg: '#f1f5f9', icon: '×' };
-  } else if (condition === 'Recommended To Take Treatment') {
+  } else if (isRecommended) {
     statusBadge = { label: 'Recommended Treatment', color: '#d97706', bg: '#fef3c7', icon: '!' };
+  } else if (condList.length > 0) {
+    statusBadge = { label: condList.join(', '), color: '#d97706', bg: '#fef3c7', icon: '!' };
   }
 
   const toothHistory = (treatmentHistory || []).filter(h => {
@@ -405,19 +429,20 @@ const ToothDetailModal = ({
               </div>
             )}
 
-            {/* Tooth Condition Selector (Master Backed) */}
+            {/* Tooth Condition Selector (Master Backed, Multiple Selectable) */}
             <div className={styles.fieldRow}>
               <DropdownSelect
                 label="Tooth Condition"
-                value={condition || ''}
+                multiple={true}
+                value={condition || []}
                 compact={true}
                 onChange={async (val) => {
                   setModalError('');
-                  if (val && resolveAndSyncMasters) {
+                  if (val && (Array.isArray(val) ? val.length > 0 : Boolean(val)) && resolveAndSyncMasters) {
                     const resolved = await resolveAndSyncMasters({ conditionVal: val });
                     onUpdateCondition(toothNum, resolved.condition || val);
                   } else {
-                    onUpdateCondition(toothNum, val || null);
+                    onUpdateCondition(toothNum, val || []);
                   }
                 }}
                 options={conditionOptions}
@@ -430,23 +455,25 @@ const ToothDetailModal = ({
             <div className={styles.quickConditionRow}>
               <button 
                 type="button"
-                className={`${styles.condBtn} ${condition === 'Teeth Removed' ? styles.condActiveRemove : ''}`}
+                className={`${styles.condBtn} ${isRemoved ? styles.condActiveRemove : ''}`}
                 onClick={() => {
                   setModalError('');
-                  onUpdateCondition(toothNum, condition === 'Teeth Removed' ? null : 'Teeth Removed');
+                  const next = isRemoved ? condList.filter(c => c !== 'Teeth Removed') : [...condList, 'Teeth Removed'];
+                  onUpdateCondition(toothNum, next);
                 }}
               >
-                {condition === 'Teeth Removed' ? '✓ Marked Removed' : 'Mark Tooth Removed'}
+                {isRemoved ? '✓ Marked Removed' : 'Mark Tooth Removed'}
               </button>
               <button 
                 type="button"
-                className={`${styles.condBtn} ${condition === 'Treatment Taken Before' ? styles.condActiveTaken : ''}`}
+                className={`${styles.condBtn} ${isTaken ? styles.condActiveTaken : ''}`}
                 onClick={() => {
                   setModalError('');
-                  onUpdateCondition(toothNum, condition === 'Treatment Taken Before' ? null : 'Treatment Taken Before');
+                  const next = isTaken ? condList.filter(c => c !== 'Treatment Taken Before') : [...condList, 'Treatment Taken Before'];
+                  onUpdateCondition(toothNum, next);
                 }}
               >
-                {condition === 'Treatment Taken Before' ? '✓ Past Tx Recorded' : 'Mark Past Tx Taken'}
+                {isTaken ? '✓ Past Tx Recorded' : 'Mark Past Tx Taken'}
               </button>
             </div>
 
@@ -473,49 +500,64 @@ const ToothDetailModal = ({
               </div>
             )}
 
-            {/* Clinical Finding / On Examination */}
+            {/* Clinical Finding / On Examination (Multiple Selectable) */}
             <DropdownSelect
               label="On Examination"
-              value={examination}
+              multiple={true}
+              value={examination || []}
               compact={true}
               onChange={setExamination}
               options={examOptions}
-              placeholder="Search or enter examination finding..."
+              placeholder="Search or enter examination findings..."
               customTypeLabel="Clinical Finding"
             />
 
-            {/* Diagnosis */}
+            {/* Diagnosis (Multiple Selectable) */}
             <DropdownSelect
               label="Diagnosis"
-              value={diagnosis}
+              multiple={true}
+              value={diagnosis || []}
               compact={true}
               onChange={setDiagnosis}
               options={diagnosisOptions}
-              placeholder="Search or enter diagnosis..."
+              placeholder="Search or enter diagnoses..."
               customTypeLabel="Diagnosis"
               extraContent={
                 <div className={styles.suggestions}>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Gingivitis')}>Gingivitis</div>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Reversible Pulpitis')}>Reversible Pulpitis</div>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Dental Caries')}>Dental Caries</div>
+                  {['Gingivitis', 'Reversible Pulpitis', 'Dental Caries'].map(chip => (
+                    <div
+                      key={chip}
+                      className={`${styles.suggestionChip} ${diagList.includes(chip) ? styles.suggestionChipActive : ''}`}
+                      onClick={() => toggleDiagnosis(chip)}
+                    >
+                      {diagList.includes(chip) ? '✓ ' : ''}{chip}
+                    </div>
+                  ))}
                 </div>
               }
             />
 
-            {/* Treatment Suggested */}
+            {/* Treatment Suggested (Multiple Selectable) */}
             <DropdownSelect
               label="Treatment Suggested"
-              value={treatment}
+              multiple={true}
+              value={treatment || []}
               compact={true}
               onChange={setTreatment}
               options={treatmentOptions}
-              placeholder="Search or enter treatment procedure..."
+              placeholder="Search or enter treatment procedures..."
               customTypeLabel="Treatment Procedure"
               extraContent={
                 <div className={styles.suggestions}>
-                  <div className={styles.suggestionChip} onClick={() => setTreatment('Root Canal Treatment')}>Root Canal</div>
-                  <div className={styles.suggestionChip} onClick={() => setTreatment('Composite Filling')}>Composite Filling</div>
-                  <div className={styles.suggestionChip} onClick={() => setTreatment('Dental Crown')}>Dental Crown</div>
+                  {['Root Canal Treatment', 'Composite Filling', 'Dental Crown'].map(chip => (
+                    <div
+                      key={chip}
+                      className={`${styles.suggestionChip} ${txList.includes(chip) ? styles.suggestionChipActive : ''}`}
+                      onClick={() => toggleTreatment(chip)}
+                    >
+                      {txList.includes(chip) ? '✓ ' : ''}{chip === 'Root Canal Treatment' ? 'Root Canal' : chip}
+                    </div>
+                  ))}
                 </div>
               }
             />
@@ -662,10 +704,14 @@ const ToothDetailModal = ({
             type="button" 
             className={styles.btnPrimary} 
             onClick={async () => {
-              if (treatment || diagnosis) {
-                if (condition === 'Teeth Removed' && !isReplacementProcedure(treatment)) {
-                  setModalError(`Cannot apply "${treatment || 'routine treatment'}" to a tooth marked as removed. Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`);
-                  return;
+              const hasData = txList.length > 0 || diagList.length > 0 || examList.length > 0;
+              if (hasData) {
+                if (isRemoved) {
+                  const routineProcs = txList.filter(t => !isReplacementProcedure(t));
+                  if (routineProcs.length > 0) {
+                    setModalError(`Cannot apply "${routineProcs.join(', ')}" to a tooth marked as removed. Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`);
+                    return;
+                  }
                 }
                 setModalError('');
                 await onAddTreatment();
@@ -674,7 +720,7 @@ const ToothDetailModal = ({
               }
             }}
           >
-            {treatment || diagnosis ? 'Apply Treatment & Save' : 'Done'}
+            {(txList.length > 0 || diagList.length > 0) ? `Apply Treatment (${txList.length || 1}) & Save` : 'Done'}
           </button>
         </div>
       </div>
@@ -699,10 +745,10 @@ function OdontogramContent({ isWorkflowStep }) {
   const [selectedType, setSelectedType] = useState(''); // 'tooth' | 'custom'
   const [selectedValue, setSelectedValue] = useState('');
 
-  // Form State
-  const [examination, setExamination] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [treatment, setTreatment] = useState('');
+  // Form State (All Multiple Selectable)
+  const [examination, setExamination] = useState([]);
+  const [diagnosis, setDiagnosis] = useState([]);
+  const [treatment, setTreatment] = useState([]);
   const [selectedSurfaces, setSelectedSurfaces] = useState([]);
   const [plannedTreatments, setPlannedTreatments] = useState([]);
 
@@ -753,10 +799,15 @@ function OdontogramContent({ isWorkflowStep }) {
   const resolveAndSyncMasters = async ({ treatmentVal, diagnosisVal, examinationVal, conditionVal }) => {
     try {
       const payload = {};
-      if (treatmentVal && treatmentVal.trim()) payload.treatment = treatmentVal.trim();
-      if (diagnosisVal && diagnosisVal.trim()) payload.diagnosis = diagnosisVal.trim();
-      if (examinationVal && examinationVal.trim()) payload.examination = examinationVal.trim();
-      if (conditionVal && conditionVal.trim()) payload.condition = conditionVal.trim();
+      const txArr = Array.isArray(treatmentVal) ? treatmentVal : (treatmentVal ? [treatmentVal] : []);
+      const dxArr = Array.isArray(diagnosisVal) ? diagnosisVal : (diagnosisVal ? [diagnosisVal] : []);
+      const exArr = Array.isArray(examinationVal) ? examinationVal : (examinationVal ? [examinationVal] : []);
+      const cdArr = Array.isArray(conditionVal) ? conditionVal : (conditionVal ? [conditionVal] : []);
+
+      if (txArr.length > 0) payload.treatment = txArr;
+      if (dxArr.length > 0) payload.diagnosis = dxArr;
+      if (exArr.length > 0) payload.examination = exArr;
+      if (cdArr.length > 0) payload.condition = cdArr;
 
       if (Object.keys(payload).length === 0) {
         return { treatment: treatmentVal, diagnosis: diagnosisVal, examination: examinationVal, condition: conditionVal };
@@ -789,25 +840,41 @@ function OdontogramContent({ isWorkflowStep }) {
     }
   };
 
-  // Helper to persist selections to backend database
-  const persistSelectionsToBackend = useCallback(async (teethToSave) => {
+  // Helper to persist selections and charted conditions to backend database
+  const persistSelectionsToBackend = useCallback(async (teethToSave, overrideConditions) => {
     if (!patientId) return;
     try {
       const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
       const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' };
+      const conditionsPayload = overrideConditions || existingConditions;
+
+      // 1. Persist to ClinicalNotes (appointment-level snapshot)
       await fetch('http://127.0.0.1:8000/api/clinical-notes/save/', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           patient_id: patientId,
           appointment_id: location.state?.appointmentId || null,
-          selected_teeth: teethToSave
+          selected_teeth: teethToSave,
+          chart_conditions: conditionsPayload
         })
       });
+
+      // 2. Persist structured tooth-level condition records
+      if (conditionsPayload && Object.keys(conditionsPayload).length > 0) {
+        await fetch(`http://127.0.0.1:8000/api/patients/${patientId}/tooth-conditions/`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            teeth_data: conditionsPayload,
+            appointment_id: location.state?.appointmentId || null
+          })
+        });
+      }
     } catch (err) {
-      console.warn("Could not persist selected teeth to clinical-notes:", err);
+      console.warn("Could not persist selected teeth and conditions to backend:", err);
     }
-  }, [patientId, location.state]);
+  }, [patientId, location.state, existingConditions]);
 
   // Load initial patient state from LocalStorage, ClinicalNotes and Treatment History
   useEffect(() => {
@@ -848,6 +915,21 @@ function OdontogramContent({ isWorkflowStep }) {
       .catch(err => {
         console.warn("Could not load clinical notes for patient:", err);
       });
+
+    // 2.1 Fetch persistent tooth conditions from database
+    fetch(`http://127.0.0.1:8000/api/patients/${patientId}/tooth-conditions/`, { headers })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.chart_conditions && Object.keys(data.chart_conditions).length > 0) {
+          const dbConditions = {};
+          Object.entries(data.chart_conditions).forEach(([tNum, info]) => {
+            const c = info.condition || [];
+            dbConditions[tNum] = Array.isArray(c) ? c : [c];
+          });
+          setExistingConditions(prev => ({ ...dbConditions, ...prev }));
+        }
+      })
+      .catch(err => console.warn("Could not load backend tooth conditions:", err));
 
     // 3. Fetch treatment history from backend
     fetch(`http://127.0.0.1:8000/api/patient/${patientId}/treatment-history/`, { headers })
@@ -968,7 +1050,7 @@ function OdontogramContent({ isWorkflowStep }) {
   const handleUpdateCondition = (num, cond) => {
     setExistingConditions(prev => {
       const next = { ...prev };
-      if (!cond) {
+      if (!cond || (Array.isArray(cond) && cond.length === 0)) {
         delete next[num];
       } else {
         next[num] = cond;
@@ -989,7 +1071,7 @@ function OdontogramContent({ isWorkflowStep }) {
   const handleAddTreatment = async () => {
     if (selectedTeeth.length === 0) return;
 
-    // Resolve / auto-create masters for entered procedure, diagnosis, examination
+    // Resolve / auto-create masters for entered procedures, diagnoses, examinations
     const resolved = await resolveAndSyncMasters({
       treatmentVal: treatment,
       diagnosisVal: diagnosis,
@@ -997,36 +1079,61 @@ function OdontogramContent({ isWorkflowStep }) {
       conditionVal: selectedValue ? existingConditions[selectedValue] : null
     });
 
-    const activeTreatment = resolved.treatment || treatment;
-    const activeDiagnosis = resolved.diagnosis || diagnosis;
-    const activeExamination = resolved.examination || examination;
+    const activeTreatments = Array.isArray(resolved.treatment)
+      ? resolved.treatment.map(item => typeof item === 'object' ? item.name : item)
+      : (Array.isArray(treatment) ? treatment : (treatment ? [treatment] : []));
 
-    const isReplacement = isReplacementProcedure(activeTreatment);
-    const removedTeeth = selectedTeeth.filter(t => existingConditions[t] === 'Teeth Removed');
+    const activeDiagnoses = Array.isArray(resolved.diagnosis)
+      ? resolved.diagnosis.map(item => typeof item === 'object' ? item.name : item)
+      : (Array.isArray(diagnosis) ? diagnosis : (diagnosis ? [diagnosis] : []));
+
+    const activeExaminations = Array.isArray(resolved.examination)
+      ? resolved.examination.map(item => typeof item === 'object' ? item.name : item)
+      : (Array.isArray(examination) ? examination : (examination ? [examination] : []));
+
+    const diagnosisText = activeDiagnoses.join(', ');
+    const examinationText = activeExaminations.join(', ');
+    const txItems = activeTreatments.length > 0 ? activeTreatments : ['Treatment Required'];
+
+    const isToothRemoved = (t) => {
+      const c = existingConditions[t];
+      return Array.isArray(c) ? c.includes('Teeth Removed') : c === 'Teeth Removed';
+    };
+
+    const removedTeeth = selectedTeeth.filter(t => isToothRemoved(t));
+    const hasRoutine = txItems.some(tx => tx !== 'Treatment Required' && !isReplacementProcedure(tx));
 
     // Validation: routine procedures cannot be performed on removed teeth
-    if (removedTeeth.length > 0 && !isReplacement) {
+    if (removedTeeth.length > 0 && hasRoutine) {
       if (removedTeeth.length === selectedTeeth.length) {
         setValidationMessage(
-          `Cannot apply "${activeTreatment || 'routine treatment'}" because all selected teeth (${removedTeeth.join(', ')}) are marked as removed. Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`
+          `Cannot apply routine procedures to teeth marked as removed (${removedTeeth.join(', ')}). Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`
         );
         return;
       }
 
       // Partial selection: apply routine treatment to eligible teeth only
-      const eligibleTeeth = selectedTeeth.filter(t => existingConditions[t] !== 'Teeth Removed');
+      const eligibleTeeth = selectedTeeth.filter(t => !isToothRemoved(t));
       const newConditions = { ...existingConditions };
       const newTreatments = [];
 
       eligibleTeeth.forEach(t => {
-        newConditions[t] = 'Recommended To Take Treatment';
-        newTreatments.push({
-          id: Date.now() + Math.random(),
-          tooth: t.toString(),
-          category: activeDiagnosis || 'Diagnosis Required',
-          treatment: activeTreatment || 'Treatment Required',
-          surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
-          examination: activeExamination || ''
+        const curCond = newConditions[t];
+        const condArr = Array.isArray(curCond) ? [...curCond] : (curCond ? [curCond] : []);
+        if (!condArr.includes('Recommended To Take Treatment') && !condArr.includes('Teeth Removed') && !condArr.includes('Treatment Taken Before')) {
+          condArr.push('Recommended To Take Treatment');
+        }
+        newConditions[t] = condArr;
+
+        txItems.forEach(tx => {
+          newTreatments.push({
+            id: Date.now() + Math.random(),
+            tooth: t.toString(),
+            category: diagnosisText || 'Diagnosis Required',
+            treatment: tx,
+            surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
+            examination: examinationText || ''
+          });
         });
       });
 
@@ -1040,11 +1147,11 @@ function OdontogramContent({ isWorkflowStep }) {
       }
       persistSelectionsToBackend(selectedTeeth);
 
-      setExamination('');
-      setDiagnosis('');
-      setTreatment('');
+      setExamination([]);
+      setDiagnosis([]);
+      setTreatment([]);
       setSelectedSurfaces([]);
-      setValidationMessage(`Applied treatment to eligible teeth (${eligibleTeeth.join(', ')}). Removed tooth (${removedTeeth.join(', ')}) was safely excluded.`);
+      setValidationMessage(`Applied treatments to eligible teeth (${eligibleTeeth.join(', ')}). Removed tooth (${removedTeeth.join(', ')}) was safely excluded.`);
       handleClosePanel();
       return;
     }
@@ -1054,14 +1161,22 @@ function OdontogramContent({ isWorkflowStep }) {
     const newTreatments = [];
     
     selectedTeeth.forEach(t => {
-      newConditions[t] = 'Recommended To Take Treatment';
-      newTreatments.push({
-        id: Date.now() + Math.random(),
-        tooth: t.toString(),
-        category: activeDiagnosis || 'Diagnosis Required',
-        treatment: activeTreatment || 'Treatment Required',
-        surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
-        examination: activeExamination || ''
+      const curCond = newConditions[t];
+      const condArr = Array.isArray(curCond) ? [...curCond] : (curCond ? [curCond] : []);
+      if (!condArr.includes('Recommended To Take Treatment') && !condArr.includes('Teeth Removed') && !condArr.includes('Treatment Taken Before')) {
+        condArr.push('Recommended To Take Treatment');
+      }
+      newConditions[t] = condArr;
+
+      txItems.forEach(tx => {
+        newTreatments.push({
+          id: Date.now() + Math.random(),
+          tooth: t.toString(),
+          category: diagnosisText || 'Diagnosis Required',
+          treatment: tx,
+          surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
+          examination: examinationText || ''
+        });
       });
     });
     
@@ -1075,9 +1190,9 @@ function OdontogramContent({ isWorkflowStep }) {
     }
     persistSelectionsToBackend(selectedTeeth);
     
-    setExamination('');
-    setDiagnosis('');
-    setTreatment('');
+    setExamination([]);
+    setDiagnosis([]);
+    setTreatment([]);
     setSelectedSurfaces([]);
     setValidationMessage('');
     handleClosePanel();
@@ -1085,49 +1200,72 @@ function OdontogramContent({ isWorkflowStep }) {
 
   const handleSaveAndContinue = async () => {
     let finalTreatments = [...plannedTreatments];
-    
+    const txArr = Array.isArray(treatment) ? treatment : (treatment ? [treatment] : []);
+    const dxArr = Array.isArray(diagnosis) ? diagnosis : (diagnosis ? [diagnosis] : []);
+    const exArr = Array.isArray(examination) ? examination : (examination ? [examination] : []);
+
     // Check if there are uncommitted selections in the form with treatment/diagnosis
-    if (selectedTeeth.length > 0 && (treatment || diagnosis)) {
+    if (selectedTeeth.length > 0 && (txArr.length > 0 || dxArr.length > 0 || exArr.length > 0)) {
       const resolved = await resolveAndSyncMasters({
-        treatmentVal: treatment,
-        diagnosisVal: diagnosis,
-        examinationVal: examination,
+        treatmentVal: txArr,
+        diagnosisVal: dxArr,
+        examinationVal: exArr,
         conditionVal: selectedValue ? existingConditions[selectedValue] : null
       });
 
-      const activeTreatment = resolved.treatment || treatment;
-      const activeDiagnosis = resolved.diagnosis || diagnosis;
-      const activeExamination = resolved.examination || examination;
+      const activeTreatments = Array.isArray(resolved.treatment)
+        ? resolved.treatment.map(item => typeof item === 'object' ? item.name : item)
+        : (txArr.length > 0 ? txArr : ['Treatment Required']);
 
-      const removedTeeth = selectedTeeth.filter(t => existingConditions[t] === 'Teeth Removed');
-      const isReplacement = isReplacementProcedure(activeTreatment);
+      const activeDiagnoses = Array.isArray(resolved.diagnosis)
+        ? resolved.diagnosis.map(item => typeof item === 'object' ? item.name : item)
+        : dxArr;
+
+      const activeExaminations = Array.isArray(resolved.examination)
+        ? resolved.examination.map(item => typeof item === 'object' ? item.name : item)
+        : exArr;
+
+      const diagnosisText = activeDiagnoses.join(', ');
+      const examinationText = activeExaminations.join(', ');
+
+      const isToothRemoved = (t) => {
+        const c = existingConditions[t];
+        return Array.isArray(c) ? c.includes('Teeth Removed') : c === 'Teeth Removed';
+      };
+
+      const removedTeeth = selectedTeeth.filter(t => isToothRemoved(t));
+      const hasRoutine = activeTreatments.some(tx => tx !== 'Treatment Required' && !isReplacementProcedure(tx));
       
-      if (removedTeeth.length > 0 && !isReplacement) {
+      if (removedTeeth.length > 0 && hasRoutine) {
         if (removedTeeth.length === selectedTeeth.length) {
-          alert(`Cannot apply "${activeTreatment || 'routine treatment'}" to removed teeth (${removedTeeth.join(', ')}). Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`);
+          alert(`Cannot apply routine procedures to removed teeth (${removedTeeth.join(', ')}). Missing teeth only accept replacement procedures such as Implant, Bridge, or Denture.`);
           return;
         }
         // Partial: include only eligible teeth
-        const eligible = selectedTeeth.filter(t => existingConditions[t] !== 'Teeth Removed');
+        const eligible = selectedTeeth.filter(t => !isToothRemoved(t));
         eligible.forEach(t => {
-          finalTreatments.push({
-            id: Date.now() + Math.random(),
-            tooth: t.toString(),
-            category: activeDiagnosis || 'Diagnosis Required',
-            treatment: activeTreatment || 'Treatment Required',
-            surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
-            examination: activeExamination || ''
+          activeTreatments.forEach(tx => {
+            finalTreatments.push({
+              id: Date.now() + Math.random(),
+              tooth: t.toString(),
+              category: diagnosisText || 'Diagnosis Required',
+              treatment: tx,
+              surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
+              examination: examinationText || ''
+            });
           });
         });
       } else {
         selectedTeeth.forEach(t => {
-          finalTreatments.push({
-            id: Date.now() + Math.random(),
-            tooth: t.toString(),
-            category: activeDiagnosis || 'Diagnosis Required',
-            treatment: activeTreatment || 'Treatment Required',
-            surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
-            examination: activeExamination || ''
+          activeTreatments.forEach(tx => {
+            finalTreatments.push({
+              id: Date.now() + Math.random(),
+              tooth: t.toString(),
+              category: diagnosisText || 'Diagnosis Required',
+              treatment: tx,
+              surfaces: selectedSurfaces.length > 0 ? selectedSurfaces.join(', ') : 'All',
+              examination: examinationText || ''
+            });
           });
         });
       }
@@ -1534,27 +1672,38 @@ function OdontogramContent({ isWorkflowStep }) {
 
           <DropdownSelect 
             label="On Examination" 
-            value={examination} 
+            multiple={true}
+            value={examination || []} 
             onChange={setExamination} 
             options={examOptions} 
-            placeholder="Search or enter clinical finding..."
+            placeholder="Search or enter clinical findings..."
             customTypeLabel="Clinical Finding"
           />
 
           <DropdownSelect 
             label={<>Diagnosis <small>Select from suggestions</small></>} 
-            value={diagnosis} 
+            multiple={true}
+            value={diagnosis || []} 
             onChange={setDiagnosis} 
             options={diagnosisOptions}
-            placeholder="Search or enter diagnosis..."
+            placeholder="Search or enter diagnoses..."
             customTypeLabel="Diagnosis"
             extraContent={
               <>
                 <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#64748b' }}>Suggestions</div>
                 <div className={styles.suggestions}>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Gingivitis')}>Gingivitis</div>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Reversible Pulpitis')}>Reversible Pulpitis</div>
-                  <div className={styles.suggestionChip} onClick={() => setDiagnosis('Dental Caries')}>Dental Caries</div>
+                  {['Gingivitis', 'Reversible Pulpitis', 'Dental Caries'].map(chip => (
+                    <div 
+                      key={chip}
+                      className={`${styles.suggestionChip} ${(Array.isArray(diagnosis) && diagnosis.includes(chip)) ? styles.suggestionChipActive : ''}`} 
+                      onClick={() => setDiagnosis(prev => {
+                        const cur = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+                        return cur.includes(chip) ? cur.filter(d => d !== chip) : [...cur, chip];
+                      })}
+                    >
+                      {(Array.isArray(diagnosis) && diagnosis.includes(chip)) ? '✓ ' : ''}{chip}
+                    </div>
+                  ))}
                 </div>
               </>
             }
@@ -1562,16 +1711,26 @@ function OdontogramContent({ isWorkflowStep }) {
 
           <DropdownSelect 
             label="Treatment Suggested" 
-            value={treatment} 
+            multiple={true}
+            value={treatment || []} 
             onChange={setTreatment} 
             options={treatmentOptions}
-            placeholder="Select or enter procedure plan..."
+            placeholder="Select or enter procedure plans..."
             customTypeLabel="Treatment Procedure"
-            required={true}
             extraContent={
               <div className={styles.suggestions} style={{ marginTop: '0.75rem' }}>
-                <div className={styles.suggestionChip} onClick={() => setTreatment('EXTRACTION OF THIRD MOLAR')}>EXTRACTION OF THIRD MOLAR</div>
-                <div className={styles.suggestionChip} onClick={() => setTreatment('COMPOSITE RESTORATION')}>COMPOSITE RESTORATION</div>
+                {['EXTRACTION OF THIRD MOLAR', 'COMPOSITE RESTORATION', 'Root Canal Treatment'].map(chip => (
+                  <div 
+                    key={chip}
+                    className={`${styles.suggestionChip} ${(Array.isArray(treatment) && treatment.includes(chip)) ? styles.suggestionChipActive : ''}`} 
+                    onClick={() => setTreatment(prev => {
+                      const cur = Array.isArray(prev) ? prev : (prev ? [prev] : []);
+                      return cur.includes(chip) ? cur.filter(t => t !== chip) : [...cur, chip];
+                    })}
+                  >
+                    {(Array.isArray(treatment) && treatment.includes(chip)) ? '✓ ' : ''}{chip}
+                  </div>
+                ))}
               </div>
             }
           />

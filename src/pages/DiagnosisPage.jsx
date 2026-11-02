@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import styles from './DiagnosisPage.module.css';
 import { usePatients } from '../context/PatientContext';
@@ -599,16 +599,19 @@ export default function DiagnosisPage() {
             <div 
                 className={styles.fileUploadArea} 
                 style={{ border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '2rem', textAlign: 'center', background: '#f8fafc', cursor: 'pointer', marginBottom: '1.5rem' }}
-                onClick={() => {
-                    const name = prompt("Enter simulated filename (e.g., OPG.jpg)");
-                    if(name) {
-                        setAttachments([...attachments, { id: Date.now(), name, type: name.split('.').pop().toUpperCase() || 'FILE', date: new Date().toLocaleDateString() }]);
-                    }
-                }}
+                onClick={() => fileInputRef.current?.click()}
             >
-              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📄</span>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                multiple 
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.dcm,image/*,application/pdf"
+                style={{ display: 'none' }} 
+                onChange={handleFileUpload} 
+              />
+              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📁</span>
               <div style={{ fontWeight: '600', color: 'var(--slate-700)', fontSize: '1.1rem' }}>Upload RVG / X-Ray, OPG, CBCT, Intraoral Photo, Extraoral Photo, PDF</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--slate-500)', marginTop: '0.5rem' }}>Click or drag files to upload (Simulation)</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--slate-500)', marginTop: '0.5rem' }}>Click to choose scans or diagnostic documents (Supports PDF, JPG, PNG up to 25MB)</div>
             </div>
             
             <div className={styles.fileCards} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
@@ -619,7 +622,14 @@ export default function DiagnosisPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                         <div className={styles.fileName} style={{ fontWeight: '600', fontSize: '0.95rem' }}>{file.name}</div>
-                        <div className={styles.fileMeta} style={{ fontSize: '0.8rem', color: '#64748b' }}>{file.type} • Uploaded {file.date}</div>
+                        <div className={styles.fileMeta} style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          {file.type} {file.size ? `• ${file.size}` : ''} • Uploaded {file.date}
+                          {file.url && (
+                            <a href={file.url} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}>
+                              Preview
+                            </a>
+                          )}
+                        </div>
                     </div>
                     <button className={styles.btnIcon} style={{ color: '#ef4444', background: '#fee2e2', padding: '0.4rem 0.8rem', borderRadius: '4px', fontSize: '0.8rem', border: 'none', cursor: 'pointer' }} onClick={() => setAttachments(attachments.filter(a => a.id !== file.id))}>Delete</button>
                 </div>

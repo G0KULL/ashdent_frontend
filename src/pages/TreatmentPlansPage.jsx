@@ -60,14 +60,79 @@ const PageContent = () => {
     return data;
   });
 
-  // Save to local storage whenever plans change
+  // Helper to persist plans to backend database
+  const savePlansToBackend = React.useCallback(async (plansToSave) => {
+    if (!caseId || caseId === 'new') return;
+    try {
+      const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
+      const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' };
+      await fetch(`http://127.0.0.1:8000/api/patients/${caseId}/treatment-plans/`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: 'Comprehensive Dental Treatment Plan',
+          status: 'Proposed',
+          items: plansToSave
+        })
+      });
+    } catch (err) {
+      console.warn("Could not persist treatment plan to backend:", err);
+    }
+  }, [caseId]);
+
+  // Load persistent plans from database on mount
+  React.useEffect(() => {
+    if (!caseId || caseId === 'new') return;
+    fetch(`http://127.0.0.1:8000/api/patients/${caseId}/treatment-plans/`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const dbItems = [];
+          data.forEach(p => {
+            (p.items || []).forEach(it => {
+              dbItems.push({
+                id: it.id,
+                tooth: it.tooth_number || it.tooth,
+                diagnosis: it.diagnosis,
+                procedure: it.procedure_name || it.procedure,
+                surface: it.surface || 'All',
+                priority: it.priority || 'Routine',
+                cost: it.cost || it.estimated_cost || '',
+                finalAmount: it.finalAmount || it.final_cost || '',
+                visits: it.visits || it.estimated_visits || 1,
+                status: it.status || 'Planned',
+                notes: it.notes || '',
+                description: it.description || ''
+              });
+            });
+          });
+          if (dbItems.length > 0) {
+            setPlans(prev => {
+              const merged = [...dbItems];
+              prev.forEach(p => {
+                if (!merged.find(m => String(m.id) === String(p.id) || (m.tooth === p.tooth && m.procedure === p.procedure))) {
+                  merged.push(p);
+                }
+              });
+              return merged;
+            });
+          }
+        }
+      })
+      .catch(err => console.warn("Could not load backend treatment plans:", err));
+  }, [caseId]);
+
+  // Save to local storage and sync to backend database whenever plans change
   React.useEffect(() => {
       try {
           localStorage.setItem(storageKey, JSON.stringify(plans));
       } catch (e) {
           console.error("Error saving plans", e);
       }
-  }, [plans, storageKey]);
+      if (plans.length > 0) {
+        savePlansToBackend(plans);
+      }
+  }, [plans, storageKey, savePlansToBackend]);
 
   // Master Catalogues (Backed by Clinical Masters API)
   const [treatmentOptions, setTreatmentOptions] = useState([]);
@@ -173,8 +238,28 @@ const PageContent = () => {
       setPlans(plans.filter(p => p.id !== id));
   };
 
-  const updateStatus = (id, newStatus) => {
-      setPlans(plans.map(p => p.id === id ? { ...p, status: newStatus } : p));
+  const updateStatus = async (id, newStatus) => {
+      const updated = plans.map(p => p.id === id ? { ...p, status: newStatus } : p);
+      setPlans(updated);
+      if (caseId && caseId !== 'new') {
+        try {
+          if (newStatus === 'Completed') {
+            await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/convert-to-treatment/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'Completed' })
+            });
+          } else {
+            await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus })
+            });
+          }
+        } catch (e) {
+          console.warn("Could not sync item status to backend:", e);
+        }
+      }
   };
 
   const columns = [

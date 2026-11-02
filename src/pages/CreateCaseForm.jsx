@@ -151,6 +151,33 @@ const FormContent = () => {
   const { activeBranch } = useBranch();
   const branchName = activeBranch?.name || 'Main Branch';
   const [clinicLocation, setClinicLocation] = useState(branchName);
+  const rvgInputRef = useRef(null);
+  const [rvgFiles, setRvgFiles] = useState([]);
+
+  const handleRvgSelect = (e) => {
+    if (e.target.files) {
+      const selected = Array.from(e.target.files);
+      const valid = [];
+      selected.forEach(file => {
+        if (file.size === 0) {
+          alert(`File "${file.name}" is empty (0 bytes).`);
+          return;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          alert(`File "${file.name}" exceeds the 25MB limit.`);
+          return;
+        }
+        valid.push({
+          file,
+          name: file.name,
+          size: `${(file.size / 1024).toFixed(1)} KB`,
+          url: URL.createObjectURL(file)
+        });
+      });
+      setRvgFiles(prev => [...prev, ...valid]);
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/settings/clinic-profile/')
@@ -478,13 +505,36 @@ const FormContent = () => {
           <div className={styles.rvgCard}>
             <h3 className={styles.rvgTitle}>RVG Reports & Notes</h3>
             <div className={styles.rvgGrid}>
-              <div className={styles.rvgUploadArea}>
+              <div className={styles.rvgUploadArea} onClick={() => rvgInputRef.current?.click()} style={{ cursor: 'pointer' }}>
+                <input
+                  type="file"
+                  ref={rvgInputRef}
+                  multiple
+                  accept=".pdf,image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleRvgSelect}
+                />
                 <Upload size={32} color="#94a3b8" />
                 <div>
                   <div style={{ fontWeight: '600', color: '#334155' }}>Drop files here or click to upload</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Supports JPG, PNG, PDF up to 10MB</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Supports JPG, PNG, PDF up to 25MB</div>
                 </div>
-                <button className={`${styles.btnSecondary} ${styles.btnAction}`}>Upload RVG</button>
+                <button type="button" className={`${styles.btnSecondary} ${styles.btnAction}`} onClick={(e) => { e.stopPropagation(); rvgInputRef.current?.click(); }}>
+                  Upload RVG
+                </button>
+                {rvgFiles.length > 0 && (
+                  <div style={{ width: '100%', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                    {rvgFiles.map((rf, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                        <span>📎 {rf.name} ({rf.size})</span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <a href={rf.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600 }}>Preview</a>
+                          <button type="button" onClick={() => setRvgFiles(rvgFiles.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -495,14 +545,14 @@ const FormContent = () => {
                   value={clinicalNotes}
                   onChange={e => setClinicalNotes(e.target.value)}
                 ></textarea>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+                {/* <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
                   <button className={`${styles.btnSecondary} ${styles.btnAction}`}>
                     <Paperclip size={16} /> Attach
                   </button>
                   <button className={`${styles.btnSecondary} ${styles.btnAction}`}>
                     <Mic size={16} /> Voice Note
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

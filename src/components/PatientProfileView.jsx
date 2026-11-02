@@ -11,6 +11,7 @@ import PatientProfileLaboratory from './PatientProfileLaboratory'
 import PatientProfileWhatsApp from './PatientProfileWhatsApp'
 import PatientProfileGmail from './PatientProfileGmail'
 import ClinicalNotesModal from './ClinicalNotesModal'
+import PatientEMRView from './PatientEMRView'
 import { API_BASE, getHeaders } from '../utils/api'
 import styles from './SearchPatient.module.css'
 
@@ -162,7 +163,7 @@ function EditPatientModal({ patient, onClose, onSaved }) {
 }
 
 const TABS = [
-  'Overview', 'Medical History', 'Dental History', 'Appointment History', 'Treatment History', 
+  'Overview', 'EMR', 'Medical History', 'Dental History', 'Appointment History', 'Treatment History', 
   'Dental Chart', 'RVG / X-Rays', 'Clinical Notes', 'Follow-ups',
   'Prescription', 'Invoice', 'Laboratory', 'WhatsApp', 'Gmail'
 ]
@@ -463,11 +464,187 @@ export default function PatientProfileView({
             </div>
           )}
 
-          {activeTab === 'medical history' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
-          {activeTab === 'dental history' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
-          {activeTab === 'dental chart' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
+          {activeTab === 'emr' && (
+            <PatientEMRView 
+              patientId={viewPatient?.id || profile?.patient?.id} 
+              patientName={patientName}
+              onEditNote={(apptId) => setShowNotes(apptId)}
+            />
+          )}
+
+          {activeTab === 'medical history' && (
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🩺</span> Patient Medical History & Risk Factors
+              </h3>
+              {(() => {
+                const appts = profile?.appointments || [];
+                const allAllergies = [];
+                const allMedHistory = [];
+                const allMeds = [];
+                appts.forEach(a => {
+                  const cn = a.clinical_notes;
+                  if (cn) {
+                    (cn.allergies || []).forEach(x => { if (!allAllergies.includes(x)) allAllergies.push(x); });
+                    (cn.medical_history || []).forEach(x => { if (!allMedHistory.includes(x)) allMedHistory.push(x); });
+                    (cn.ongoing_medications || []).forEach(x => { if (!allMeds.includes(x)) allMeds.push(x); });
+                  }
+                });
+
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                    <div style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', color: '#dc2626', fontSize: 14 }}>⚠️ Known Allergies</h4>
+                      {allAllergies.length > 0 ? (
+                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#334155' }}>
+                          {allAllergies.map(a => <li key={a}>{a}</li>)}
+                        </ul>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>No known drug allergies (NKDA)</p>
+                      )}
+                    </div>
+
+                    <div style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', color: '#1e3a8a', fontSize: 14 }}>📋 Systemic Medical Conditions</h4>
+                      {allMedHistory.length > 0 ? (
+                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#334155' }}>
+                          {allMedHistory.map(m => <li key={m}>{m}</li>)}
+                        </ul>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>No medical history conditions recorded</p>
+                      )}
+                    </div>
+
+                    <div style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', color: '#047857', fontSize: 14 }}>💊 Ongoing Medications</h4>
+                      {allMeds.length > 0 ? (
+                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#334155' }}>
+                          {allMeds.map(m => <li key={m}>{m}</li>)}
+                        </ul>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>None reported</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {activeTab === 'dental history' && (
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🦷</span> Prior Dental History & Previous Treatments
+              </h3>
+              {(() => {
+                const appts = profile?.appointments || [];
+                const allDentalHist = [];
+                appts.forEach(a => {
+                  const cn = a.clinical_notes;
+                  if (cn && cn.dental_history) {
+                    cn.dental_history.forEach(x => { if (!allDentalHist.includes(x)) allDentalHist.push(x); });
+                  }
+                });
+
+                return allDentalHist.length > 0 ? (
+                  <div style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#334155' }}>
+                      {allDentalHist.map(h => <li key={h}>{h}</li>)}
+                    </ul>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '24px', color: '#64748b', background: '#fff', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
+                    No prior dental history recorded in consultation notes.
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {activeTab === 'dental chart' && (
+            <div style={{ padding: '20px', background: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🦷</span> Dental Chart & Odontogram Status
+                </h3>
+                <button
+                  onClick={() => onNavigate && onNavigate(`odontogram/${viewPatient?.id || profile?.patient?.id}`)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Open Full Interactive 3D Chart ↗
+                </button>
+              </div>
+              <PatientEMRView 
+                patientId={viewPatient?.id || profile?.patient?.id} 
+                patientName={patientName}
+                onEditNote={(apptId) => setShowNotes(apptId)}
+              />
+            </div>
+          )}
+
           {activeTab === 'rvg / x-rays' && <InvestigationsSection patient={viewPatient || profile?.patient} showHistoryByDefault={true} />}
-          {activeTab === 'follow-ups' && <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Coming soon...</div>}
+
+          {activeTab === 'follow-ups' && (
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>📅</span> Scheduled Follow-up Visits & Post-op Instructions
+              </h3>
+              {(() => {
+                const appts = (profile?.appointments || []).filter(a => a.clinical_notes?.follow_up_date || a.status === 'Follow-up');
+                if (appts.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', background: '#fff', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
+                      No follow-up consultations currently scheduled.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {appts.map(a => {
+                      const cn = a.clinical_notes;
+                      return (
+                        <div key={a.id} style={{ background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <strong style={{ fontSize: 14, color: '#0f172a' }}>
+                              Follow-up Date: {cn?.follow_up_date || a.date}
+                            </strong>
+                            <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>
+                              Doctor: Dr. {a.doctor_name || 'Assigned Doctor'}
+                            </div>
+                            {cn?.follow_up_note && (
+                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                                Instructions: {cn.follow_up_note}
+                              </div>
+                            )}
+                          </div>
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            background: cn?.follow_up_status === 'Completed' ? '#dcfce7' : '#fef3c7',
+                            color: cn?.follow_up_status === 'Completed' ? '#15803d' : '#d97706'
+                          }}>
+                            {cn?.follow_up_status || a.status}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Legacy Tabs for compatibility */}
           {activeTab === 'general' && <div style={{ padding: '2rem', textAlign: 'center' }}>Please use the 'Overview' tab.</div>}
