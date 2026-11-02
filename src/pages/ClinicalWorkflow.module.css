@@ -1,0 +1,199 @@
+.workflowWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+.workflowHeader {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.workflowTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--slate-900, #0f172a);
+  margin-bottom: 1rem;
+}
+
+/* Horizontal Stepper */
+.stepperContainer {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  gap: 0.5rem;
+  scrollbar-width: none; /* Firefox */
+}
+
+.stepperContainer::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+.stepWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  background: var(--slate-50, #f8fafc);
+  color: var(--slate-500, #64748b);
+  border: 1px solid var(--slate-200, #e2e8f0);
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.stepIndicator.completed {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.stepIndicator.active {
+  background: #eef2ff;
+  color: var(--primary, #4f46e5);
+  border-color: #c7d2fe;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.stepNumber {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stepIndicator.completed .stepNumber {
+  background: #10b981;
+  color: white;
+}
+
+.stepIndicator.active .stepNumber {
+  background: var(--primary, #4f46e5);
+  color: white;
+}
+
+.stepDivider {
+  width: 20px;
+  height: 2px;
+  background: var(--slate-200, #e2e8f0);
+}
+
+.stepDivider.completed {
+  background: #10b981;
+}
+
+.workflowContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Bottom Action Bar */
+.bottomBar {
+  position: sticky;
+  bottom: -48px; 
+  margin-top: auto;
+  margin-left: -32px;
+  margin-right: -32px;
+  background: white;
+  border-top: 1px solid var(--border-light, #e2e8f0);
+  padding: 1rem 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+  z-index: 20;
+}
+
+.btnPrimary {
+  background: var(--primary, #4f46e5);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--primary-dark, #3730a3);
+  transform: translateY(-1px);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: white;
+  color: var(--slate-700, #334155);
+  border: 1px solid var(--slate-300, #cbd5e1);
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--slate-50, #f8fafc);
+  border-color: var(--slate-400, #94a3b8);
+}
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Placeholder container for steps being built */
+.placeholderCard {
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  border: 1px dashed var(--slate-300, #cbd5e1);
+  color: var(--slate-500, #64748b);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.placeholderIcon {
+  width: 64px;
+  height: 64px;
+  background: var(--slate-50, #f8fafc);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}

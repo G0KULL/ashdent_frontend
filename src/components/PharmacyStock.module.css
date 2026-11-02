@@ -1,0 +1,21 @@
+.container { padding: 32px; background: transparent; min-height: 100vh; }
+
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.title { font-size: 24px; font-weight: 800; color: var(--slate-900); margin: 0; }
+
+.controls { display: flex; gap: 16px; }
+.searchBar { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 12px; min-width: 300px; outline: none; }
+.refreshBtn { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light); padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+
+.tableCard { background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px solid var(--border-light); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; padding: 16px; background: transparent; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800; }
+.table td { padding: 16px; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+
+.batchCode { background: rgba(255, 255, 255, 0.02); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--slate-700); }
+
+.badgeDanger { background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-left: 8px; }
+.badgeWarning { background: #fffbeb; color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-left: 8px; }
+
+.statusDot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }

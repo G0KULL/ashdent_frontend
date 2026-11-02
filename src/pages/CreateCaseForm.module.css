@@ -1,0 +1,364 @@
+/* CreateCaseForm.module.css - Refactored Layout */
+
+.pageWrapper, .pageWrapper *, .pageWrapper *::before, .pageWrapper *::after {
+  box-sizing: border-box;
+}
+
+.pageWrapper {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #1e293b;
+}
+
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+}
+
+.scrollContainer {
+  flex: 1;
+  padding: 24px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Patient Card */
+.patientHorizontalCard {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.patientInfoGrid {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 24px;
+  align-items: center;
+}
+
+.patientMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patientMetaLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.patientMetaValue {
+  font-size: 0.875rem;
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgeAlert {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+}
+
+.viewProfileBtnWrapper {
+  margin-left: auto;
+}
+
+/* 2-Column Form */
+.formTwoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.columnCard {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+/* Multi-select Chip Input */
+.chipInputContainer {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px;
+  background: white;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 48px;
+  align-items: center;
+  cursor: text;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.chipInputContainer:focus-within {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+.chip {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip button {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip button:hover {
+  color: #ef4444;
+}
+
+.chipInput {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 120px;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: transparent;
+  width: 100%;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background-color: white;
+  color: #0f172a;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.2s;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+/* RVG Section */
+.rvgCard {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.rvgTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 24px 0;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.rvgGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+.rvgUploadArea {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+}
+
+/* Sticky Footer */
+.bottomBar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background-color: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  z-index: 50;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.bottomBarLeft, .bottomBarRight {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.btnPrimary {
+  background-color: #14b8a6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btnPrimary:hover {
+  background-color: #0d9488;
+}
+
+.btnSecondary {
+  background-color: white;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btnSecondary:hover {
+  background-color: #f8fafc;
+}
+
+/* Cancel Button specific styling */
+.btnCancel {
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.btnCancel:hover {
+  background-color: #fef2f2;
+}
+
+/* Action Buttons within cards */
+.btnAction {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .formTwoCol, .rvgGrid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .formTwoCol, .rvgGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .patientInfoGrid {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .viewProfileBtnWrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .viewProfileBtnWrapper button {
+    width: 100%;
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .bottomBarLeft, .bottomBarRight {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .bottomBarLeft button, .bottomBarRight button {
+    flex: 1;
+    width: 100%;
+  }
+}
+

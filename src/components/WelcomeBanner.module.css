@@ -1,0 +1,256 @@
+/* ═══════════════════════════════════════════════
+   WelcomeBanner — Premium Midnight Teal v3.0
+   ═══════════════════════════════════════════════ */
+
+.banner {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 0 20px rgba(128, 0, 255, 0.15);
+  animation: fadeInUp 0.5s ease-out both;
+  min-height: 130px;
+  margin-bottom: 16px;
+}
+
+/* Top mesh glow */
+.banner::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: -20px;
+  width: 250px;
+  height: 180px;
+  background: radial-gradient(ellipse, rgba(168, 85, 247, 0.15) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Bottom right glow */
+.banner::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  right: 100px;
+  width: 200px;
+  height: 130px;
+  background: radial-gradient(ellipse, rgba(14, 165, 233, 0.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Animated grid pattern */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+
+/* Content */
+.content {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #c084fc;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.title span {
+  background: linear-gradient(135deg, #a855f7, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.date {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  max-width: 500px;
+  margin-bottom: 12px;
+}
+
+.desc strong {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+/* ── CTA Buttons ── */
+.btnGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #a855f7, #0ea5e9);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.btnPrimary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.4);
+  filter: brightness(1.1);
+}
+
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.btnGhost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+}
+
+/* ── Visual / Image ── */
+.visual {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  max-height: 120px;
+  filter: drop-shadow(0 8px 16px rgba(168, 85, 247, 0.25));
+  animation: floatAnim 4s ease-in-out infinite;
+}
+
+/* Stat pills row */
+.statPills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.pillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+@keyframes floatAnim {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .banner {
+    padding: 16px 20px;
+  }
+
+  .visual {
+    display: none;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+}
