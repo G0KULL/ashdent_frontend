@@ -425,6 +425,11 @@ export default function Appointments({ onNavigate, userRole }) {
       total_balance: appt.patient_balance,
       age: appt.patient_age,
       gender: appt.patient_gender,
+      doctor: appt.doctor,
+      doctorId: appt.doctor,
+      doctor_name: appt.doctor_name,
+      doctorName: appt.doctor_name,
+      appointmentId: appt.id,
     })
 
     setCheckingCaseSheet(true)
@@ -445,7 +450,7 @@ export default function Appointments({ onNavigate, userRole }) {
               if (hasActiveStatus || hasActiveTreatments) {
                 activeCase = {
                   caseNumber: plan?.caseDetails?.caseNumber || `CS-${a.id}`,
-                  doctor: a.doctor_name || appt.doctor_name || 'Dr. Assigned',
+                  doctor: a.doctor_name || appt.doctor_name || 'Doctor not assigned',
                   createdDate: plan?.caseDetails?.createdDate || new Date(a.date).toLocaleDateString(),
                   lastVisit: new Date(a.date).toLocaleDateString(),
                   currentTreatment: plan?.caseDetails?.currentTreatment || plan?.plannedTreatments?.[0]?.procedure || 'General Consultation',
@@ -485,7 +490,7 @@ export default function Appointments({ onNavigate, userRole }) {
     const role = userRole?.toLowerCase() || 'doctor'
     const docObj = doctors.find(d => String(d.id) === String(appt.doctor))
     const docId = appt.doctor || docObj?.id || null
-    const docName = appt.doctor_name || docObj?.name || 'Unassigned'
+    const docName = appt.doctor_name || docObj?.name || 'Doctor not assigned'
 
     if (isNewCase) {
       navigate(`/${role}/create-case/${appt.patient}`, {
@@ -1001,7 +1006,7 @@ export default function Appointments({ onNavigate, userRole }) {
                   const statusStyle = STATUS_STYLE[appt.status] || { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' }
                   const visitType = appt.is_virtual ? 'Telemedicine' : 'In-Office'
                   const docObj = doctors.find(d => String(d.id) === String(appt.doctor))
-                  const doctorName = appt.doctor_name || docObj?.name || 'Unassigned'
+                  const doctorName = appt.doctor_name || docObj?.name || 'Doctor not assigned'
 
                   return (
                     <tr key={appt.id} className={styles.apptRow}>

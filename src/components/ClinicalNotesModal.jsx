@@ -192,7 +192,7 @@ function ToothItem({ num, isSelected, onClick }) {
   )
 }
 
-export default function ClinicalNotesModal({ appointmentId, patientId, patientName, onClose, onOpenBilling, notesOnly = false }) {
+export default function ClinicalNotesModal({ appointmentId, patientId, patientName, doctorId, doctorName, onClose, onOpenBilling, notesOnly = false }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showTeethChart, setShowTeethChart] = useState(false)
@@ -501,6 +501,7 @@ export default function ClinicalNotesModal({ appointmentId, patientId, patientNa
         body: JSON.stringify({
           appointment_id: appointmentId,
           patient_id: patientId, // Used to auto-create appointment if null
+          doctor_id: doctorId || profile?.patient?.doctor || null,
           ...data,
           treatments: data.visit_treatments // Syncing with M2M field
         })
@@ -540,7 +541,7 @@ export default function ClinicalNotesModal({ appointmentId, patientId, patientNa
             <img src="https://www.w3schools.com/howto/img_avatar.png" className={styles.patAvatar} alt="patient" />
             <div>
               <h3>{patientName}</h3>
-              <p>ID: {appointmentId} · Patient Dashboard</p>
+              <p>ID: {appointmentId} · Doctor: {doctorName || profile?.patient?.doctor_name || 'Doctor not assigned'}</p>
             </div>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>✕</button>

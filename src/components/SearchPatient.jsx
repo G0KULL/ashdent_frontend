@@ -191,7 +191,7 @@ export default function SearchPatient({ onAddNew, onNavigate, userRole }) {
     setViewPatient(null)
     setBookingPatient(patient)
     setQuickBooking({
-      doctor: doctors[0]?.id || '',
+      doctor: patient?.doctor || '',
       date: new Date().toISOString().split('T')[0],
       time: '10:00',
       status: 'Scheduled',
@@ -201,6 +201,7 @@ export default function SearchPatient({ onAddNew, onNavigate, userRole }) {
   const saveQuickBooking = async (e) => {
     e.preventDefault()
     if (!quickBooking.date) return Swal.fire('Error', 'Date is required', 'error')
+    if (!quickBooking.doctor) return Swal.fire('Doctor Required', 'Please select an assigned doctor for the appointment.', 'warning')
     setQuickBookingSaving(true)
     try {
       const res = await fetch(`${API_BASE}/appointment/create/`, {

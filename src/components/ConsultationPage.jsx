@@ -47,7 +47,7 @@ export default function ConsultationPage() {
   const [chiefComplaint, setChiefComplaint] = useState({ complaints: [], description: '', painScale: 5 });
   const [medicalHistory, setMedicalHistory] = useState({ conditions: [], currentMedication: '', drugAllergy: '', previousSurgery: '', vitals: { bp: '', pulse: '', temp: '', weight: '', height: '' }, emergencyContact: '', doctorNotes: '', advices: '' });
   const [dentalChart, setDentalChart] = useState({ dentition: 'Permanent', selectedTooth: null });
-  const [treatmentPlan, setTreatmentPlan] = useState([{ id: 1, tooth: '36', procedure: 'Root Canal Treatment', priority: 'High', cost: 4500, doctor: 'Dr. Harshad', status: 'Planned', insurance: 'Not Covered', remarks: '' }]);
+  const [treatmentPlan, setTreatmentPlan] = useState([]);
   const [todaysVisit, setTodaysVisit] = useState({ visitDate: new Date().toISOString().split('T')[0], chairNumber: 'Chair 1', assistant: '', procedureDone: '', localAnesthesia: '', clinicalFindings: '', procedureNotes: '', complications: '', nextVisitAdvice: '', chairTime: '', procedureDuration: '' });
   const [prescriptions, setPrescriptions] = useState([{ id: 1, medicine_master_id: null, medicine: '', strength: '', frequency: '1-0-1', duration: '5 Days', morning: true, afternoon: false, night: true, foodRelation: 'After Food', notes: '' }]);
   const [availableMedicines, setAvailableMedicines] = useState([]);
@@ -190,7 +190,7 @@ export default function ConsultationPage() {
           caseNumber: `CS-${currentPatientId || '101'}-${Date.now().toString().slice(-4)}`,
           visitNumber: 1,
           createdDate: new Date().toISOString().split('T')[0],
-          consultingDoctor: apptInfo.doctorName || 'Dr. Assigned',
+          consultingDoctor: apptInfo.doctorName || 'Doctor not assigned',
           status: 'In Progress',
           estimatedCompletion: '2026-08-01',
           progress: 30

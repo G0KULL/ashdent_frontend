@@ -25,7 +25,7 @@ const TreatmentCases = () => {
       name: 'Root Canal Treatment (Tooth 36)',
       complaint: 'Severe pain on lower left jaw for 3 days.',
       diagnosis: 'Irreversible Pulpitis',
-      doctor: 'Dr. Smith',
+      doctor: 'Doctor not assigned',
       started: 'Oct 12, 2023',
       lastVisit: 'Oct 15, 2023',
       progress: 60,

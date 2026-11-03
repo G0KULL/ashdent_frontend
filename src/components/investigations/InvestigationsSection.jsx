@@ -409,7 +409,7 @@ export default function InvestigationsSection({
                       </span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <User size={12} />
-                        Dr. {inv.doctor_name || inv.doctor || resolvedDoctorName || 'Assigned'}
+                        {inv.doctor_name || resolvedDoctorName || 'Doctor not assigned'}
                       </span>
                     </div>
                   </div>

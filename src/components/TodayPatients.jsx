@@ -222,6 +222,11 @@ export default function TodayPatients({ onNavigate, userRole }) {
       total_balance: appt.patient_balance,
       age: appt.patient_age,
       gender: appt.patient_gender,
+      doctor: appt.doctor,
+      doctorId: appt.doctor,
+      doctor_name: appt.doctor_name,
+      doctorName: appt.doctor_name,
+      appointmentId: appt.id,
     })
     if (onNavigate) {
       onNavigate('search-patient', { state: { initialTab: 'general' } })
@@ -439,7 +444,7 @@ export default function TodayPatients({ onNavigate, userRole }) {
                       background: appt.doctor_color, flexShrink: 0
                     }} />
                   )}
-                  <span>{appt.doctor_name || '—'}</span>
+                  <span>{appt.doctor_name || 'Doctor not assigned'}</span>
                 </div>
 
                 {/* Status dropdown */}

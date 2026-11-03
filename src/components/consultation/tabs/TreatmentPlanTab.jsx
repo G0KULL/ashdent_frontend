@@ -50,7 +50,7 @@ const TreatmentPlanTab = () => {
                     }}>{row.priority || 'Normal'}</span>
                   </td>
                   <td style={{ padding: '1rem', fontWeight: '500', color: '#334155' }}>${row.cost}</td>
-                  <td style={{ padding: '1rem', color: '#334155' }}>{row.dr || 'Dr. Smith'}</td>
+                  <td style={{ padding: '1rem', color: '#334155' }}>{row.dr || row.doctor || row.doctor_name || 'Doctor not assigned'}</td>
                   <td style={{ padding: '1rem', color: '#334155', fontSize: '0.75rem' }}>{row.ins || 'None'}</td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ color: row.status === 'In Progress' ? '#10b981' : '#64748b', fontWeight: '500' }}>{row.status || 'Planned'}</span>

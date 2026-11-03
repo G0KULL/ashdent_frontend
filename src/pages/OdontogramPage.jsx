@@ -684,7 +684,7 @@ const ToothDetailModal = ({
                     <div key={h.id} className={styles.historyListItem}>
                       <div>
                         <strong>{h.treatment}</strong>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Date: {h.date || 'Previous Visit'} • Doctor: {h.doctor || 'Attending Clinician'}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Date: {h.date || 'Previous Visit'} • Doctor: {h.doctor || 'Doctor not assigned'}</div>
                       </div>
                       <span style={{ color: h.status?.toLowerCase() === 'completed' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
                         {h.status || 'Recorded'}
@@ -1292,6 +1292,11 @@ function OdontogramContent({ isWorkflowStep }) {
     const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/doctor';
     navigate(`${basePath}/treatment-plans/${patientId || 'new'}`, { 
       state: { 
+        ...location.state,
+        patientId: patientId,
+        doctorId: location.state?.doctorId,
+        doctorName: location.state?.doctorName,
+        appointmentId: location.state?.appointmentId,
         diagnoses: finalTreatments,
         chartConditions: existingConditions,
         selectedTeeth: selectedTeeth

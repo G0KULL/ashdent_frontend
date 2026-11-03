@@ -143,7 +143,7 @@ export default function Prescriptions() {
                       </div>
                     </td>
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                    <td>{p.doctor_name || 'Dr. Admin'}</td>
+                    <td>{p.doctor_name || 'Doctor not assigned'}</td>
                     <td>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>
                         {(p.items || []).slice(0, 2).map(i => i.medicine_name).join(', ')}

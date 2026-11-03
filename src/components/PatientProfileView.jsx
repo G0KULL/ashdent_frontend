@@ -417,7 +417,7 @@ export default function PatientProfileView({
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                               <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 14 }}>{appt.date} · {appt.time_formatted || appt.time}</span>
-                              <span style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4 }}>{appt.doctor_name || 'Doctor'}</span>
+                              <span style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4 }}>{appt.doctor_name || 'Doctor not assigned'}</span>
                             </div>
                             {cn.chief_complaint && (
                               <p style={{ margin: '4px 0', fontSize: 13, color: '#334155' }}>
@@ -619,7 +619,7 @@ export default function PatientProfileView({
                               Follow-up Date: {cn?.follow_up_date || a.date}
                             </strong>
                             <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>
-                              Doctor: Dr. {a.doctor_name || 'Assigned Doctor'}
+                              Doctor: {a.doctor_name ? (a.doctor_name.startsWith('Dr.') ? a.doctor_name : `Dr. ${a.doctor_name}`) : 'Doctor not assigned'}
                             </div>
                             {cn?.follow_up_note && (
                               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>

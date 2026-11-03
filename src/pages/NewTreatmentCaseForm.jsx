@@ -251,7 +251,7 @@ const FormContent = ({ isWorkflowStep }) => {
                   </td>
                   <td style={{ padding: '0.75rem' }}><input type="text" className={styles.input} placeholder="$0.00" /></td>
                   <td style={{ padding: '0.75rem' }}><input type="number" className={styles.input} defaultValue="2" /></td>
-                  <td style={{ padding: '0.75rem' }}><input type="text" className={styles.input} placeholder="Dr. Smith" /></td>
+                  <td style={{ padding: '0.75rem' }}><input type="text" className={styles.input} placeholder="Assigned Doctor" /></td>
                 </tr>
               </tbody>
             </table>

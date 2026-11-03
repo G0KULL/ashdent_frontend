@@ -3,20 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { usePatients } from '../context/PatientContext'
 import styles from './FollowUps.module.css'
 
-// Fallback dummy doctors if API fails
-const DUMMY_DOCTORS = [
-  { id: 'd1', name: 'Dr. Sarah Jenkins' },
-  { id: 'd2', name: 'Dr. Navas Kp' },
-  { id: 'd3', name: 'Dr. Smith' },
-]
-
 export default function FollowUps({ onNavigate }) {
   const { setActivePatient } = usePatients()
   const navigate = useNavigate()
   const [followUps, setFollowUps] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [doctors, setDoctors] = useState(DUMMY_DOCTORS)
+  const [doctors, setDoctors] = useState([])
   const [changingDoctor, setChangingDoctor] = useState({}) // { [followUpId]: doctorId }
   const [expandedRow, setExpandedRow] = useState(null)
 

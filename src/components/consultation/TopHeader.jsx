@@ -56,11 +56,12 @@ const TopHeader = ({ hidePatientHeader = false }) => {
             </div>
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#0f172a' }}>
-                {patient.doctor_name || patient.doctorName || patient.assignedDoctor || (() => {
-                  try {
-                    const u = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
-                    return u.name || u.username ? `Dr. ${u.name || u.username}` : 'Dr. Assigned';
-                  } catch { return 'Dr. Assigned'; }
+                {(() => {
+                  const rawDoc = patient?.doctor_name || patient?.doctorName || patient?.assignedDoctor;
+                  if (!rawDoc || rawDoc === 'Doctor not assigned' || rawDoc === 'Unassigned') {
+                    return 'Doctor not assigned';
+                  }
+                  return rawDoc.startsWith('Dr.') || rawDoc.startsWith('Dr ') ? rawDoc : `Dr. ${rawDoc}`;
                 })()}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Assigned Doctor</div>

@@ -63,7 +63,7 @@ const TAB_STYLE = (active) => ({
 
 // Removing hardcoded LAB_TESTS list
 
-export default function PrescriptionModal({ patientId, patientName, patientPhone, appointmentId, clinicalNoteId, onClose, onOpenBilling, onNavigate, initialTab = 'medicines' }) {
+export default function PrescriptionModal({ patientId, patientName, patientPhone, appointmentId, clinicalNoteId, doctorId, doctorName, onClose, onOpenBilling, onNavigate, initialTab = 'medicines' }) {
   const [tab, setTab] = useState(initialTab)
   const [saving, setSaving] = useState(false)
 
@@ -91,6 +91,7 @@ export default function PrescriptionModal({ patientId, patientName, patientPhone
 
   // — Billing Data —
   const [patientDetails, setPatientDetails] = useState(null)
+  const [billingData, setBillingData] = useState({ paid_amount: '', payment_method: 'Cash', notes: '' })
 
   const fetchMedicines = () => {
     fetch(`${API}/medicine-master/list/`, { headers: getHeaders() })
@@ -235,6 +236,7 @@ export default function PrescriptionModal({ patientId, patientName, patientPhone
             visit: visitId,
             patient: patientId,
             clinical_note: clinicalNoteId || null,
+            doctor: doctorId || patientDetails?.doctor || null,
             notes: combinedNotes,
             items: rxItems.map(it => {
               const doseStr = it.time && it.time !== 'Select'
@@ -569,7 +571,9 @@ export default function PrescriptionModal({ patientId, patientName, patientPhone
             <img src="https://www.w3schools.com/howto/img_avatar.png" className={styles.patAvatar} alt="patient" />
             <div>
               <h3>{patientName}</h3>
-              <p style={{ fontSize: 12, color: '#94a3b8' }}>Prescription & Orders · Appt #{appointmentId}</p>
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>
+                Prescription & Orders · Appt #{appointmentId} · Dr: {doctorName || patientDetails?.doctor_name || 'Doctor not assigned'}
+              </p>
             </div>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>✕</button>

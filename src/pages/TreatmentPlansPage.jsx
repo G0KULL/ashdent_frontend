@@ -18,6 +18,8 @@ const PageContent = () => {
   const { caseId } = useParams();
   
   const storageKey = `ashdent_treatment_${caseId || 'new'}`;
+  const [assignedDoctor, setAssignedDoctor] = useState(location.state?.doctorName || '');
+  const [assignedDoctorId, setAssignedDoctorId] = useState(location.state?.doctorId || null);
   
   const [plans, setPlans] = useState(() => {
     let data = [];
@@ -72,6 +74,7 @@ const PageContent = () => {
         body: JSON.stringify({
           title: 'Comprehensive Dental Treatment Plan',
           status: 'Proposed',
+          doctor_id: assignedDoctorId || location.state?.doctorId || null,
           items: plansToSave
         })
       });
@@ -87,6 +90,11 @@ const PageContent = () => {
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
+          const firstDoc = data[0].doctor_name || data[0].doctor;
+          if (firstDoc && firstDoc !== 'Doctor not assigned') {
+            setAssignedDoctor(firstDoc);
+            if (data[0].doctor_id) setAssignedDoctorId(data[0].doctor_id);
+          }
           const dbItems = [];
           data.forEach(p => {
             (p.items || []).forEach(it => {
@@ -101,6 +109,7 @@ const PageContent = () => {
                 finalAmount: it.finalAmount || it.final_cost || '',
                 visits: it.visits || it.estimated_visits || 1,
                 status: it.status || 'Planned',
+                doctor: it.doctor || it.doctor_name || p.doctor_name || p.doctor || '',
                 notes: it.notes || '',
                 description: it.description || ''
               });
@@ -121,6 +130,25 @@ const PageContent = () => {
       })
       .catch(err => console.warn("Could not load backend treatment plans:", err));
   }, [caseId]);
+
+  // Load assigned doctor from patient profile or latest appointment
+  React.useEffect(() => {
+    if (!caseId || caseId === 'new') return;
+    fetch(`http://127.0.0.1:8000/api/patient/${caseId}/profile/`)
+      .then(r => r.ok ? r.json() : null)
+      .then(prof => {
+        if (!prof) return;
+        if (prof.patient?.doctor_name) {
+          setAssignedDoctor(prof.patient.doctor_name);
+          if (prof.patient.doctor) setAssignedDoctorId(prof.patient.doctor);
+        } else if (prof.appointments?.length > 0 && prof.appointments[0].doctor_name) {
+          setAssignedDoctor(prof.appointments[0].doctor_name);
+          if (prof.appointments[0].doctor) setAssignedDoctorId(prof.appointments[0].doctor);
+        }
+      })
+      .catch(() => {});
+  }, [caseId]);
+
 
   // Save to local storage and sync to backend database whenever plans change
   React.useEffect(() => {
@@ -175,7 +203,22 @@ const PageContent = () => {
   const openDrawer = (plan = null) => {
       if (plan) {
           setActivePlan(plan.id);
-          setDrawerForm(plan);
+          setDrawerForm({
+              id: plan.id,
+              tooth: plan.tooth || '',
+              diagnosis: plan.diagnosis || '',
+              procedure: plan.procedure || '',
+              surface: plan.surface || 'All',
+              description: plan.description || '',
+              priority: plan.priority || 'Routine',
+              cost: plan.cost ?? '',
+              discount: plan.discount ?? '',
+              finalAmount: plan.finalAmount ?? '',
+              duration: plan.duration || '',
+              visits: plan.visits ?? 1,
+              status: plan.status || 'Proposed',
+              notes: plan.notes || ''
+          });
       } else {
           setActivePlan(null);
           setDrawerForm({
@@ -243,18 +286,26 @@ const PageContent = () => {
       setPlans(updated);
       if (caseId && caseId !== 'new') {
         try {
-          if (newStatus === 'Completed') {
-            await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/convert-to-treatment/`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: 'Completed' })
-            });
+          const isRealDbId = typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+          if (isRealDbId) {
+            if (newStatus === 'Completed') {
+              await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/convert-to-treatment/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  status: 'Completed',
+                  doctor_id: assignedDoctorId || location.state?.doctorId || null
+                })
+              });
+            } else {
+              await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+              });
+            }
           } else {
-            await fetch(`http://127.0.0.1:8000/api/treatment-plan-items/${id}/`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: newStatus })
-            });
+            savePlansToBackend(updated);
           }
         } catch (e) {
           console.warn("Could not sync item status to backend:", e);
@@ -361,7 +412,7 @@ const PageContent = () => {
                                 </div>
                                 <div className={styles.cardCol}>
                                   <span className={styles.cardLabel}>Doctor</span>
-                                  <div className={styles.cardValue}>Arjun</div>
+                                  <div className={styles.cardValue}>{p.doctor || assignedDoctor || 'Doctor not assigned'}</div>
                                 </div>
                               </div>
                           </div>
@@ -487,7 +538,7 @@ const PageContent = () => {
                 </div>
                 <div>
                   <label className={styles.drawerLabel}>Number of Visits</label>
-                  <input type="number" className={styles.drawerInput} defaultValue="1" value={drawerForm.visits} onChange={e => handleFormChange('visits', e.target.value)} />
+                  <input type="number" className={styles.drawerInput} value={drawerForm.visits ?? 1} onChange={e => handleFormChange('visits', e.target.value)} />
                 </div>
               </div>
 
@@ -525,9 +576,11 @@ const PageContent = () => {
       {isNotesModalOpen && (
           <ClinicalNotesModal 
               onClose={() => setIsNotesModalOpen(false)}
-              patientId={patient?.id || 'NEW'}
-              patientName={patient?.name || 'Walk-in Patient'}
-              appointmentId={caseId || 'NEW'}
+              patientId={caseId && caseId !== 'new' ? caseId : (patient?.id || 'NEW')}
+              patientName={location.state?.patientName || patient?.name || 'Walk-in Patient'}
+              appointmentId={location.state?.appointmentId || (caseId && caseId !== 'new' ? caseId : 'NEW')}
+              doctorId={assignedDoctorId || location.state?.doctorId}
+              doctorName={assignedDoctor}
               notesOnly={true}
           />
       )}
@@ -535,9 +588,11 @@ const PageContent = () => {
       {isPrescriptionModalOpen && (
           <PrescriptionModal 
               onClose={() => setIsPrescriptionModalOpen(false)}
-              patientId={patient?.id || 'NEW'}
-              patientName={patient?.name || 'Walk-in Patient'}
-              appointmentId={caseId || 'NEW'}
+              patientId={caseId && caseId !== 'new' ? caseId : (patient?.id || 'NEW')}
+              patientName={location.state?.patientName || patient?.name || 'Walk-in Patient'}
+              appointmentId={location.state?.appointmentId || (caseId && caseId !== 'new' ? caseId : 'NEW')}
+              doctorId={assignedDoctorId || location.state?.doctorId}
+              doctorName={assignedDoctor}
               initialTab="medicines"
           />
       )}

@@ -35,7 +35,7 @@ const STATES = [
 ];
 const FEE_OPTIONS = ["Standard", "Premium", "Budget", "Insurance", "Waived"];
 const TYPE_OPTIONS = ["New", "Review", "Emergency", "Follow-up"];
-const DOCTOR_OPTIONS = ["Dr. Navas Kp", "Dr. Anitha Raj", "Dr. Suresh Nair"];
+// Doctor options are loaded dynamically from database API
 
 export function calcAgeFromDob(dobStr, targetDate = new Date()) {
   if (!dobStr) return "";
@@ -711,7 +711,7 @@ export default function AddPatient({
               <Field label="First Name *" error={errors.firstName}>
                 <input
                   className={err(errors.firstName)}
-                  placeholder="e.g. Arjun"
+                  placeholder="e.g. Rahul"
                   value={form.firstName}
                   onChange={(e) => set("firstName", e.target.value)}
                 />
