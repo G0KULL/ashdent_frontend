@@ -175,3 +175,16 @@
 .proceedBtn:hover {
   background-color: #0284c7;
 }
+
+@media (max-width: 600px) {
+  .modal {
+    width: 95vw;
+    border-radius: 10px;
+  }
+  .header, .footer {
+    padding: 1rem;
+  }
+  .content {
+    padding: 1rem;
+  }
+}

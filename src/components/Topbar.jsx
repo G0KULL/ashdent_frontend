@@ -6,9 +6,7 @@ import styles from './Topbar.module.css'
 
 export default function Topbar({ onToggleSidebar, onNavigate, userRole, currentUser }) {
   const { searchQuery, setSearchQuery } = usePatients()
-  const { branches, activeBranch, activeCompany, switchBranch } = useBranch()
-  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false)
-  const branchRef = useRef(null)
+  const { activeCompany } = useBranch()
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -90,9 +88,6 @@ export default function Topbar({ onToggleSidebar, onNavigate, userRole, currentU
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false)
       }
-      if (branchRef.current && !branchRef.current.contains(e.target)) {
-        setBranchDropdownOpen(false)
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -124,59 +119,8 @@ export default function Topbar({ onToggleSidebar, onNavigate, userRole, currentU
 
         <div className={styles.titleWrap}>
           <h1 className={styles.title} onClick={() => onNavigate && onNavigate('dashboard')} style={{ cursor: 'pointer' }}>
-            {userRole} Dashboard <span className={styles.sep}>|</span> <span className={styles.brand}>AshDent HMS</span>
+            {userRole} Dashboard <span className={styles.sep}>|</span> <span className={styles.brand}>{activeCompany?.name || 'AshDent HMS'}</span>
           </h1>
-        </div>
-
-        {/* Branch Selector Widget */}
-        <div className={styles.branchSelectorWrap} ref={branchRef}>
-          <button
-            type="button"
-            className={`${styles.branchTrigger} ${branches.length <= 1 ? styles.branchTriggerStatic : ''}`}
-            onClick={() => branches.length > 1 && setBranchDropdownOpen(prev => !prev)}
-            aria-label="Active Branch"
-            title={branches.length > 1 ? "Click to switch branch" : "Current Branch"}
-          >
-            <svg className={styles.branchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" />
-            </svg>
-            <div className={styles.branchInfo}>
-              <span className={styles.branchName}>{activeBranch?.name || 'Main Branch'}</span>
-              <span className={styles.branchCompany}>{activeCompany?.name || activeBranch?.company_name || 'AshDent Healthcare'}</span>
-            </div>
-            {branches.length > 1 && (
-              <svg className={`${styles.branchChevron} ${branchDropdownOpen ? styles.branchChevronOpen : ''}`} width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 7.5L10 12.5L15 7.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-
-          {branchDropdownOpen && branches.length > 1 && (
-            <div className={styles.branchDropdown}>
-              <div className={styles.branchDropdownHeader}>
-                Authorized Branches ({branches.length})
-              </div>
-              {branches.map(b => (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={`${styles.branchItem} ${String(b.id) === String(activeBranch?.id) ? styles.branchItemActive : ''}`}
-                  onClick={() => {
-                    switchBranch(b.id)
-                    setBranchDropdownOpen(false)
-                  }}
-                >
-                  <div className={styles.branchItemContent}>
-                    <span className={styles.branchItemName}>{b.name}</span>
-                    <span className={styles.branchItemCode}>{b.code} {b.city ? `• ${b.city}` : ''}</span>
-                  </div>
-                  {String(b.id) === String(activeBranch?.id) && (
-                    <span className={styles.branchCheckmark}>✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 

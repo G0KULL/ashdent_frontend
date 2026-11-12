@@ -332,3 +332,20 @@ textarea:focus,
 .form-select:focus {
   background-color: #ffffff !important;
 }
+
+/* ── Global Responsive Containers & Media ── */
+.table-responsive,
+.tableContainer,
+.tableWrapper,
+.tableWrap,
+.tableCard {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+img, video, canvas {
+  max-width: 100%;
+}

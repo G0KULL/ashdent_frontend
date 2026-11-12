@@ -97,7 +97,9 @@
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .sectionHeader {
@@ -130,6 +132,9 @@
 
 .sectionBody {
   padding: 16px 20px;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .alertBox {
@@ -206,6 +211,7 @@
 }
 
 .emrTable {
+  min-width: 600px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
@@ -269,5 +275,27 @@
   color: #94a3b8;
   font-size: 0.88rem;
   font-style: italic;
+}
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 768px) {
+  .topBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .sectionBody {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topBarTitle {
+    font-size: 1rem;
+  }
+  .teethGrid {
+    grid-template-columns: 1fr;
+  }
 }
 

@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom'
 function getDashboardPath(role) {
   if (!role) return '/login'
   switch (role.toLowerCase()) {
+    case 'super admin':
     case 'admin':        return '/admin/dashboard'
     case 'doctor':       return '/doctor/dashboard'
     case 'receptionist': return '/receptionist/dashboard'
@@ -26,10 +27,12 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     const user = JSON.parse(saved)
     const userRole = user?.role
 
-    if (!userRole) return <Navigate to="/login" replace />
+    if (!userRole && !user?.is_superuser) return <Navigate to="/login" replace />
 
-    // If user's role is not in the allowed list → redirect them to THEIR dashboard
-    if (!allowedRoles.map(r => r.toLowerCase()).includes(userRole.toLowerCase())) {
+    const isSuperUser = Boolean(user?.is_superuser || (userRole && userRole.toLowerCase() === 'super admin'))
+    const roleMatches = userRole && allowedRoles.map(r => r.toLowerCase()).includes(userRole.toLowerCase())
+
+    if (!roleMatches && !isSuperUser) {
       return <Navigate to={getDashboardPath(userRole)} replace />
     }
 

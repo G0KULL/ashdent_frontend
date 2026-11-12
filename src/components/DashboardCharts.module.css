@@ -1,0 +1,351 @@
+/* ═══════════════════════════════════════════════════════════════
+   AshDent HMS — Dashboard Charts Module CSS
+   Responsive styling for:
+     1. Appointment Graphical Representation (Patient & Appt Trend)
+     2. Treatment by Type (Responsive Donut & Horizontal Bar)
+   ═══════════════════════════════════════════════════════════════ */
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.chartCard {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease;
+}
+
+.chartCard:hover {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.06);
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chartSubtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.headerPills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.statPillDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.statPillVal {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.viewToggleGroup {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.viewToggleBtn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viewToggleBtn:hover {
+  color: #0f172a;
+}
+
+.viewToggleActive {
+  background: #ffffff;
+  color: #3b82f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Chart Container ── */
+.chartContainer {
+  height: 270px;
+  width: 100%;
+  min-width: 0;
+  min-height: 240px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* ── Treatments Layout (Chart + Scrollable Legend List) ── */
+.treatmentLayout {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  height: 270px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.treatmentChartHalf {
+  flex: 1 1 50%;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.treatmentLegendHalf {
+  flex: 1 1 50%;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+.treatmentLegendHalf::-webkit-scrollbar {
+  width: 4px;
+}
+
+.treatmentLegendHalf::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+.treatmentLegendItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.treatmentLegendItem:hover {
+  background: #f1f5f9;
+}
+
+.treatmentLegendLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.treatmentColorDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.treatmentName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.treatmentLegendRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.treatmentCount {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 1px 7px;
+  border-radius: 6px;
+}
+
+.treatmentPercent {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 32px;
+  text-align: right;
+}
+
+.emptyTreatments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE MEDIA QUERIES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Laptop / Small Desktop (<= 1100px) ── */
+@media (max-width: 1100px) {
+  .chartsGrid {
+    gap: 16px;
+  }
+  .chartCard {
+    padding: 16px 18px;
+  }
+}
+
+/* ── Tablet (<= 960px) ── */
+/* When space is insufficient, stack into single column */
+@media (max-width: 960px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .chartContainer {
+    height: 260px;
+  }
+  .treatmentLayout {
+    height: 260px;
+  }
+}
+
+/* ── Mobile (<= 640px) ── */
+@media (max-width: 640px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .chartCard {
+    padding: 14px 14px;
+    border-radius: 12px;
+  }
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .headerPills {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .chartContainer {
+    height: 240px;
+    min-height: 210px;
+  }
+
+  /* On mobile, stack donut and legend vertically so neither is cramped */
+  .treatmentLayout {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    gap: 12px;
+  }
+  .treatmentChartHalf {
+    height: 190px;
+    width: 100%;
+  }
+  .treatmentLegendHalf {
+    height: auto;
+    max-height: 140px;
+    width: 100%;
+  }
+}
+
+/* ── Small Mobile (<= 380px) ── */
+@media (max-width: 380px) {
+  .chartCard {
+    padding: 12px 10px;
+  }
+  .chartTitle {
+    font-size: 14px;
+  }
+  .chartContainer {
+    height: 220px;
+    min-height: 190px;
+  }
+  .treatmentChartHalf {
+    height: 170px;
+  }
+  .treatmentLegendItem {
+    padding: 6px 8px;
+  }
+  .treatmentName {
+    max-width: 110px;
+    font-size: 11px;
+  }
+}
+

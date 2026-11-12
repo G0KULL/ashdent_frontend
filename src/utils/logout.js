@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2'
+import { clearAuthData } from './api'
 
 export const confirmLogout = (customCallback) => {
   Swal.fire({
@@ -14,11 +15,10 @@ export const confirmLogout = (customCallback) => {
     focusCancel: true
   }).then((result) => {
     if (result.isConfirmed) {
+      clearAuthData()
       if (customCallback) {
         customCallback()
       } else {
-        localStorage.removeItem('ashdent_user')
-        localStorage.removeItem('doctosmart_user')
         window.location.href = '/login'
       }
     }

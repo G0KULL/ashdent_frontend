@@ -494,3 +494,46 @@
   color: #16a34a;
   font-weight: 700;
 }
+/* ── Mobile / Tablet Topbar Refinements ── */
+@media (max-width: 1024px) {
+  .titleWrap .sep,
+  .titleWrap .brand {
+    display: none;
+  }
+  .branchCompany {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .titleWrap {
+    display: none;
+  }
+  .branchName {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .searchWrap {
+    display: none !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .topbar {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .branchName {
+    max-width: 80px;
+  }
+  .branchTrigger {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+}

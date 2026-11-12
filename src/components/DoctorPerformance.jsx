@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './DoctorPerformance.module.css'
 
 export default function DoctorPerformance({ userRole }) {
@@ -20,7 +21,7 @@ export default function DoctorPerformance({ userRole }) {
     setLoading(true)
     setError(null)
     try {
-      let url = `http://127.0.0.1:8000/api/dashboard/doctor-performance/?period=${period}`
+      let url = `${API_BASE}/dashboard/doctor-performance/?period=${period}`
       if (period === 'custom') {
         if (startDate && endDate) {
           url += `&start_date=${startDate}&end_date=${endDate}`
@@ -30,17 +31,7 @@ export default function DoctorPerformance({ userRole }) {
         }
       }
 
-      const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-      const headers = {
-        'X-User-Id': user.id || '',
-        'X-Username': user.username || ''
-      }
-      const token = localStorage.getItem('token')
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const res = await fetch(url, { headers })
+      const res = await fetch(url, { headers: getHeaders() })
 
       if (!res.ok) {
         throw new Error(`Failed to load data (${res.status})`)
@@ -272,7 +263,11 @@ export default function DoctorPerformance({ userRole }) {
           <p>No doctor performance data found for the selected period.</p>
         </div>
       ) : (
-        <div className={styles.tableWrapper}>
+        <>
+          <div className={styles.mobileScrollNotice}>
+            <span>👉 Swipe horizontally to view full workload & completion metrics</span>
+          </div>
+          <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -405,6 +400,7 @@ export default function DoctorPerformance({ userRole }) {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   )

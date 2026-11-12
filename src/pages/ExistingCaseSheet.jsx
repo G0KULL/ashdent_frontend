@@ -33,7 +33,7 @@ const CaseSheetContent = () => {
           url: URL.createObjectURL(file)
         });
       });
-      setScans(prev => [...prev, ...newItems]);
+      setScans(prev => [...newItems, ...prev]);
       e.target.value = '';
     }
   };
@@ -90,6 +90,7 @@ const CaseSheetContent = () => {
           {/* Treatment Plan Table */}
           <div className={styles.card}>
             <h3 className={styles.sectionTitle}>Treatment Plan</h3>
+            <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -123,6 +124,7 @@ const CaseSheetContent = () => {
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Clinical Notes (SOAP) */}
@@ -201,7 +203,8 @@ const CaseSheetContent = () => {
           <div className={styles.grid2Col}>
             <div className={styles.card}>
               <h3 className={styles.sectionTitle}><Pill size={20} color="#14b8a6"/> Prescription</h3>
-              <table className={styles.table}>
+              <div className={styles.tableWrapper}>
+            <table className={styles.table}>
                 <thead>
                   <tr>
                     <th className={styles.th}>Medicine</th>
@@ -214,6 +217,7 @@ const CaseSheetContent = () => {
                   <tr><td className={styles.td}>Ibuprofen</td><td className={styles.td}>400mg</td><td className={styles.td}>SOS</td></tr>
                 </tbody>
               </table>
+            </div>
             </div>
             
             <div className={styles.card}>

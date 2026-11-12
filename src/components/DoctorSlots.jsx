@@ -15,8 +15,8 @@ export default function DoctorSlots({ userRole }) {
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [selectedDoctorObj, setSelectedDoctorObj] = useState(null)
 
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'queue' : 'propose') // 'queue' | 'active' | 'direct' | 'propose' | 'leaves' | 'history'
+  // Navigation Tabs: 'direct' (Weekly Schedule for Admin) | 'propose' (Weekly Schedule for Doctor) | 'active' | 'queue' | 'leaves' | 'history'
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'direct' : 'propose')
 
   // Schedules and Proposals State
   const [activeSchedules, setActiveSchedules] = useState([])
@@ -25,14 +25,20 @@ export default function DoctorSlots({ userRole }) {
   const [overrides, setOverrides] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Proposal / Direct Configuration Builder Form
+  // ════════ 7-DAY WEEKLY SCHEDULE STATE ════════
   const [slotDuration, setSlotDuration] = useState(30)
-  const [sessions, setSessions] = useState([
-    { day_of_week: 0, start_time: '09:00', end_time: '13:00', session_name: 'Morning Session' },
-    { day_of_week: 0, start_time: '14:00', end_time: '17:00', session_name: 'Afternoon Session' }
-  ])
   const [proposalNotes, setProposalNotes] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [weeklySchedule, setWeeklySchedule] = useState(() =>
+    DAYS.map((dayName, dayIdx) => ({
+      day_of_week: dayIdx,
+      day_name: dayName,
+      is_available: dayIdx < 5, // Mon-Fri default available, Sat-Sun off
+      sessions: dayIdx < 5 ? [{ start_time: '09:00', end_time: '13:00', session_name: 'Morning Session' }] : []
+    }))
+  )
+
+  const [savingWeekly, setSavingWeekly] = useState(false)
+  const [savingDayIdx, setSavingDayIdx] = useState(null)
   const [msg, setMsg] = useState(null)
 
   // Leave / Override Form
@@ -123,6 +129,36 @@ export default function DoctorSlots({ userRole }) {
     fetchData()
   }, [fetchData])
 
+  // 3. Populate Weekly Schedule editor from activeSchedules
+  useEffect(() => {
+    if (activeSchedules) {
+      const newWeekly = DAYS.map((dayName, dayIdx) => {
+        const daySlots = activeSchedules.filter(s => s.day_of_week === dayIdx && s.is_active)
+        if (daySlots.length > 0) {
+          return {
+            day_of_week: dayIdx,
+            day_name: dayName,
+            is_available: true,
+            sessions: daySlots.map(s => ({
+              id: s.id,
+              start_time: s.start_time ? s.start_time.slice(0, 5) : '09:00',
+              end_time: s.end_time ? s.end_time.slice(0, 5) : '13:00',
+              session_name: s.session_name || 'Regular Session'
+            }))
+          }
+        } else {
+          return {
+            day_of_week: dayIdx,
+            day_name: dayName,
+            is_available: false,
+            sessions: []
+          }
+        }
+      })
+      setWeeklySchedule(newWeekly)
+    }
+  }, [activeSchedules])
+
   // Update selectedDoctorObj when dropdown changes
   const handleDoctorChange = (id) => {
     setSelectedDoctorId(id)
@@ -131,87 +167,261 @@ export default function DoctorSlots({ userRole }) {
     if (doc) setSlotDuration(doc.slot_duration || 30)
   }
 
-  // Session Handlers
-  const handleAddSession = () => {
-    setSessions(prev => [
-      ...prev,
-      { day_of_week: 0, start_time: '09:00', end_time: '12:00', session_name: `Session ${prev.length + 1}` }
-    ])
-  }
+  // ════════ 7-DAY WEEKLY SCHEDULE HANDLERS ════════
 
-  const handleRemoveSession = (idx) => {
-    setSessions(prev => prev.filter((_, i) => i !== idx))
-  }
-
-  const handleUpdateSession = (idx, field, val) => {
-    setSessions(prev => prev.map((s, i) => i === idx ? { ...s, [field]: val } : s))
-  }
-
-  // Submit Schedule Proposal (Doctor Mode)
-  const handleSubmitProposal = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    setMsg(null)
-    try {
-      const payload = {
-        proposal_type: 'RECURRING_SCHEDULE',
-        slot_duration: parseInt(slotDuration, 10),
-        proposed_slots: sessions,
-        notes: proposalNotes,
-        branch: activeBranch?.id || null
+  // Toggle Day Available / Unavailable
+  const handleToggleDay = (dayIdx) => {
+    setWeeklySchedule(prev => prev.map(d => {
+      if (d.day_of_week !== dayIdx) return d
+      const nextAvailable = !d.is_available
+      return {
+        ...d,
+        is_available: nextAvailable,
+        sessions: nextAvailable && d.sessions.length === 0
+          ? [{ start_time: '09:00', end_time: '13:00', session_name: 'Regular Session' }]
+          : d.sessions
       }
-      if (isAdmin && selectedDoctorId) payload.doctor = selectedDoctorId
+    }))
+  }
 
-      const res = await fetch(`${API_BASE}/doctor-schedule-proposals/`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload)
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setMsg({ type: 'success', text: `Schedule proposal for ${activeBranch?.name || 'current branch'} submitted successfully for Administrator approval!` })
-        fetchData()
-      } else {
-        setMsg({ type: 'error', text: data.error || 'Failed to submit proposal' })
+  // Add Session / Time Range to a specific day
+  const handleAddSessionToDay = (dayIdx) => {
+    setWeeklySchedule(prev => prev.map(d => {
+      if (d.day_of_week !== dayIdx) return d
+      const count = d.sessions.length + 1
+      const defaultStart = count === 2 ? '17:00' : '14:00'
+      const defaultEnd = count === 2 ? '20:00' : '17:00'
+      return {
+        ...d,
+        is_available: true,
+        sessions: [
+          ...d.sessions,
+          { start_time: defaultStart, end_time: defaultEnd, session_name: `Session ${count}` }
+        ]
       }
-    } catch (err) {
-      setMsg({ type: 'error', text: 'Network connection failed' })
-    } finally {
-      setSaving(false)
+    }))
+  }
+
+  // Remove Session from a specific day
+  const handleRemoveSessionFromDay = (dayIdx, sessionIdx) => {
+    setWeeklySchedule(prev => prev.map(d => {
+      if (d.day_of_week !== dayIdx) return d
+      const filtered = d.sessions.filter((_, i) => i !== sessionIdx)
+      return {
+        ...d,
+        sessions: filtered,
+        is_available: filtered.length > 0
+      }
+    }))
+  }
+
+  // Update a session field on a specific day
+  const handleUpdateDaySession = (dayIdx, sessionIdx, field, val) => {
+    setWeeklySchedule(prev => prev.map(d => {
+      if (d.day_of_week !== dayIdx) return d
+      const updated = d.sessions.map((s, i) => i === sessionIdx ? { ...s, [field]: val } : s)
+      return { ...d, sessions: updated }
+    }))
+  }
+
+  // Helper validation for day sessions
+  const validateDaySessions = (day) => {
+    if (!day.is_available || day.sessions.length === 0) return null
+    for (let i = 0; i < day.sessions.length; i++) {
+      const s = day.sessions[i]
+      if (!s.start_time || !s.end_time) {
+        return `${day.day_name}: Session #${i + 1} is missing start or end time.`
+      }
+      if (s.start_time >= s.end_time) {
+        return `${day.day_name}: Session #${i + 1} start time (${s.start_time}) must be earlier than end time (${s.end_time}).`
+      }
     }
+    // Overlap check
+    const sorted = [...day.sessions].sort((a, b) => a.start_time.localeCompare(b.start_time))
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (sorted[i].end_time > sorted[i + 1].start_time) {
+        return `${day.day_name}: Overlapping sessions detected (${sorted[i].session_name} and ${sorted[i + 1].session_name}). Time ranges must be separated.`
+      }
+    }
+    return null
   }
 
-  // Direct Schedule Management (Admin Mode)
-  const handleDirectScheduleSave = async (e) => {
-    e.preventDefault()
-    if (!selectedDoctorId) {
-      alert('Please select a doctor')
+  // ════════ ACTION 1: SAVE SINGLE DAY ONLY (DAY_SPECIFIC) ════════
+  const handleSaveSingleDay = async (dayIdx) => {
+    const day = weeklySchedule.find(d => d.day_of_week === dayIdx)
+    if (!day) return
+
+    const err = validateDaySessions(day)
+    if (err) {
+      alert(err)
       return
     }
-    setSaving(true)
+
+    setSavingDayIdx(dayIdx)
     setMsg(null)
+
+    const payloadSlots = day.is_available
+      ? day.sessions.map(s => ({
+          day_of_week: dayIdx,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          session_name: s.session_name || 'Regular Session'
+        }))
+      : []
+
     try {
-      const res = await fetch(`${API_BASE}/doctor-schedules/direct/`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-          doctor: selectedDoctorId,
-          branch: activeBranch?.id || null,
-          slot_duration: parseInt(slotDuration, 10),
-          slots: sessions
+      if (isAdmin) {
+        if (!selectedDoctorId) {
+          alert('Please select a doctor')
+          setSavingDayIdx(null)
+          return
+        }
+
+        const res = await fetch(`${API_BASE}/doctor-schedules/direct/`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            mode: 'DAY_SPECIFIC',
+            doctor: selectedDoctorId,
+            branch: activeBranch?.id || null,
+            day_of_week: dayIdx,
+            is_available: day.is_available,
+            slot_duration: parseInt(slotDuration, 10),
+            slots: payloadSlots
+          })
         })
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setMsg({ type: 'success', text: `Doctor working hours for ${activeBranch?.name || 'current branch'} directly updated and activated immediately!` })
-        fetchData()
+        const data = await res.json()
+        if (res.ok) {
+          setMsg({
+            type: 'success',
+            text: `✅ ${day.day_name} schedule saved & activated! All other 6 days remain completely unchanged.`
+          })
+          fetchData()
+        } else {
+          setMsg({ type: 'error', text: data.error || `Failed to update ${day.day_name}` })
+        }
       } else {
-        setMsg({ type: 'error', text: data.error || 'Failed to update schedule' })
+        // Doctor Mode: Submit day-specific proposal
+        const res = await fetch(`${API_BASE}/doctor-schedule-proposals/`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            mode: 'DAY_SPECIFIC',
+            day_of_week: dayIdx,
+            proposal_type: 'RECURRING_SCHEDULE',
+            slot_duration: parseInt(slotDuration, 10),
+            proposed_slots: payloadSlots,
+            notes: proposalNotes || `Proposed schedule adjustment for ${day.day_name}`,
+            branch: activeBranch?.id || null
+          })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setMsg({
+            type: 'success',
+            text: `📤 Proposal for ${day.day_name} submitted successfully for Administrator approval!`
+          })
+          fetchData()
+        } else {
+          setMsg({ type: 'error', text: data.error || `Failed to submit proposal for ${day.day_name}` })
+        }
       }
-    } catch (err) {
+    } catch {
       setMsg({ type: 'error', text: 'Network connection failed' })
     } finally {
-      setSaving(false)
+      setSavingDayIdx(null)
+    }
+  }
+
+  // ════════ ACTION 2: SAVE ENTIRE WEEKLY SCHEDULE (FULL_WEEK) ════════
+  const handleSaveWeeklySchedule = async (e) => {
+    if (e) e.preventDefault()
+
+    // Validate all 7 days
+    for (const day of weeklySchedule) {
+      const err = validateDaySessions(day)
+      if (err) {
+        alert(err)
+        return
+      }
+    }
+
+    setSavingWeekly(true)
+    setMsg(null)
+
+    // Collect all sessions across all active days
+    const allSlots = []
+    weeklySchedule.forEach(day => {
+      if (day.is_available && day.sessions.length > 0) {
+        day.sessions.forEach(s => {
+          allSlots.push({
+            day_of_week: day.day_of_week,
+            start_time: s.start_time,
+            end_time: s.end_time,
+            session_name: s.session_name || 'Regular Session'
+          })
+        })
+      }
+    })
+
+    try {
+      if (isAdmin) {
+        if (!selectedDoctorId) {
+          alert('Please select a doctor')
+          setSavingWeekly(false)
+          return
+        }
+
+        const res = await fetch(`${API_BASE}/doctor-schedules/direct/`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            mode: 'FULL_WEEK',
+            doctor: selectedDoctorId,
+            branch: activeBranch?.id || null,
+            slot_duration: parseInt(slotDuration, 10),
+            slots: allSlots
+          })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setMsg({
+            type: 'success',
+            text: `⚡ Complete weekly schedule (all 7 days) saved & activated successfully for ${activeBranch?.name || 'current branch'}!`
+          })
+          fetchData()
+        } else {
+          setMsg({ type: 'error', text: data.error || 'Failed to update weekly schedule' })
+        }
+      } else {
+        // Doctor Mode: Submit full-week proposal
+        const res = await fetch(`${API_BASE}/doctor-schedule-proposals/`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            mode: 'FULL_WEEK',
+            proposal_type: 'RECURRING_SCHEDULE',
+            slot_duration: parseInt(slotDuration, 10),
+            proposed_slots: allSlots,
+            notes: proposalNotes || 'Full 7-day recurring schedule proposal',
+            branch: activeBranch?.id || null
+          })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setMsg({
+            type: 'success',
+            text: `📤 Complete 7-day schedule proposal submitted successfully for Administrator approval!`
+          })
+          fetchData()
+        } else {
+          setMsg({ type: 'error', text: data.error || 'Failed to submit proposal' })
+        }
+      }
+    } catch {
+      setMsg({ type: 'error', text: 'Network connection failed' })
+    } finally {
+      setSavingWeekly(false)
     }
   }
 
@@ -253,7 +463,7 @@ export default function DoctorSlots({ userRole }) {
 
   // Approve Proposal (Admin)
   const handleApproveProposal = async (proposalId) => {
-    if (!window.confirm('Approve this proposal? Active doctor schedules will be replaced immediately.')) return
+    if (!window.confirm('Approve this proposal? Active doctor schedules will be updated immediately.')) return
     try {
       const res = await fetch(`${API_BASE}/doctor-schedule-proposals/${proposalId}/approve/`, {
         method: 'POST',
@@ -348,7 +558,6 @@ export default function DoctorSlots({ userRole }) {
     }
   }
 
-  // Check if doctor has a pending proposal
   const ownPendingProposal = pendingProposals.find(p => !selectedDoctorId || String(p.doctor) === String(selectedDoctorId))
 
   return (
@@ -356,8 +565,8 @@ export default function DoctorSlots({ userRole }) {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1>Doctor Slot Scheduling & Approvals</h1>
-          <p>Configure recurring sessions, slot durations, date overrides, and administrator approval workflows</p>
+          <h1>Doctor Weekly Slot Arrangement</h1>
+          <p>Configure recurring weekly hours across all seven days, slot durations, date overrides, and approvals</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <span style={{
               display: 'inline-flex',
@@ -378,7 +587,7 @@ export default function DoctorSlots({ userRole }) {
 
         {isAdmin && (
           <div className={styles.doctorSelector}>
-            <label>Doctor:</label>
+            <label>Select Doctor:</label>
             <select
               value={selectedDoctorId}
               onChange={e => handleDoctorChange(e.target.value)}
@@ -397,8 +606,8 @@ export default function DoctorSlots({ userRole }) {
           <div className={styles.pendingBannerContent}>
             <h4>⏳ Schedule Proposal Pending Approval</h4>
             <p>
-              Submitted on {new Date(ownPendingProposal.submitted_at).toLocaleDateString()} with {ownPendingProposal.slot_duration} min slots.
-              Your currently active schedule remains bookable while this proposal is reviewed by Clinic Administrators.
+              Submitted on {new Date(ownPendingProposal.submitted_at).toLocaleDateString()} with {ownPendingProposal.slot_duration} min slots ({ownPendingProposal.schedule_mode || 'Schedule'}).
+              Your currently active schedule remains bookable while this proposal is reviewed by Administrators.
             </p>
           </div>
           <button
@@ -412,49 +621,40 @@ export default function DoctorSlots({ userRole }) {
 
       {/* Tabs Navigation */}
       <div className={styles.tabsBar}>
+        <button
+          className={`${styles.tabBtn} ${(activeTab === 'direct' || activeTab === 'propose') ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab(isAdmin ? 'direct' : 'propose')}
+        >
+          {isAdmin ? '⚙️ Weekly Schedule Manager' : '⚙️ Propose Weekly Schedule'}
+        </button>
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'active' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('active')}
+        >
+          👁️ Active Schedule View
+        </button>
         {isAdmin && (
           <button
             className={`${styles.tabBtn} ${activeTab === 'queue' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('queue')}
           >
-            Approval Queue
+            📋 Approval Queue
             {pendingProposals.length > 0 && (
               <span className={styles.tabBadge}>{pendingProposals.length}</span>
             )}
           </button>
         )}
         <button
-          className={`${styles.tabBtn} ${activeTab === 'active' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('active')}
-        >
-          Active Schedule
-        </button>
-        {isAdmin ? (
-          <button
-            className={`${styles.tabBtn} ${activeTab === 'direct' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('direct')}
-          >
-            Direct Schedule Management
-          </button>
-        ) : (
-          <button
-            className={`${styles.tabBtn} ${activeTab === 'propose' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('propose')}
-          >
-            Propose Schedule Change
-          </button>
-        )}
-        <button
           className={`${styles.tabBtn} ${activeTab === 'leaves' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('leaves')}
         >
-          Date Overrides & Leaves
+          📅 Date Overrides &amp; Leaves
         </button>
         <button
           className={`${styles.tabBtn} ${activeTab === 'history' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          Proposal History
+          📜 Proposal History
         </button>
       </div>
 
@@ -473,7 +673,237 @@ export default function DoctorSlots({ userRole }) {
         </div>
       )}
 
-      {/* TAB 1: ADMIN APPROVAL QUEUE */}
+      {/* ════════ TAB 1: 7-DAY WEEKLY SCHEDULE CONFIGURATION ════════ */}
+      {(activeTab === 'direct' || activeTab === 'propose') && (
+        <div>
+          {/* Top Configuration Controls */}
+          <div className={styles.card} style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px' }}>
+                  {isAdmin
+                    ? `Weekly Schedule: Dr. ${selectedDoctorObj?.name || 'Selected Doctor'}`
+                    : 'Configure Your Weekly Schedule'}
+                </h3>
+                <p className={styles.cardSub} style={{ margin: 0 }}>
+                  Configure all 7 days with multiple time ranges and break intervals. Save each day individually or save the entire week together.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>
+                  Slot Duration:
+                </label>
+                <select
+                  value={slotDuration}
+                  onChange={e => setSlotDuration(e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    background: '#ffffff'
+                  }}
+                >
+                  <option value={15}>15 Minutes</option>
+                  <option value={20}>20 Minutes</option>
+                  <option value={30}>30 Minutes (Recommended)</option>
+                  <option value={45}>45 Minutes</option>
+                  <option value={60}>60 Minutes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 7 Days Stacked List */}
+          <div className={styles.weeklyEditorList}>
+            {weeklySchedule.map((day) => {
+              const isDaySaving = savingDayIdx === day.day_of_week
+              return (
+                <div
+                  key={day.day_of_week}
+                  className={`${styles.dayConfigCard} ${!day.is_available ? styles.dayUnavailable : ''}`}
+                >
+                  {/* Day Header Row */}
+                  <div className={styles.dayConfigHeader}>
+                    <div className={styles.dayTitleGroup}>
+                      <span className={styles.dayLabel}>{day.day_name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDay(day.day_of_week)}
+                        className={`${styles.dayToggleBtn} ${day.is_available ? styles.isAvailable : styles.isOff}`}
+                        title="Click to toggle Available / Unavailable"
+                      >
+                        {day.is_available ? '● Available' : '○ Unavailable / Off'}
+                      </button>
+                    </div>
+
+                    <div className={styles.dayActionGroup}>
+                      {day.is_available && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddSessionToDay(day.day_of_week)}
+                          className={styles.addRangeBtn}
+                          title="Add another time range for this day"
+                        >
+                          + Add Time Range
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={isDaySaving || savingWeekly}
+                        onClick={() => handleSaveSingleDay(day.day_of_week)}
+                        className={styles.saveDayBtn}
+                        title={`Save only ${day.day_name} without affecting other days`}
+                      >
+                        {isDaySaving ? 'Saving...' : `💾 Save ${day.day_name} Only`}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Day Sessions List or Unavailable Notice */}
+                  {day.is_available ? (
+                    <div className={styles.daySessionsList}>
+                      {day.sessions.map((sess, sIdx) => (
+                        <div key={sIdx} className={styles.sessionCard}>
+                          <input
+                            type="text"
+                            value={sess.session_name}
+                            onChange={e => handleUpdateDaySession(day.day_of_week, sIdx, 'session_name', e.target.value)}
+                            placeholder="e.g. Morning OPD, Evening Clinic"
+                          />
+                          <input
+                            type="time"
+                            value={sess.start_time}
+                            onChange={e => handleUpdateDaySession(day.day_of_week, sIdx, 'start_time', e.target.value)}
+                            required
+                          />
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8' }}>to</span>
+                          <input
+                            type="time"
+                            value={sess.end_time}
+                            onChange={e => handleUpdateDaySession(day.day_of_week, sIdx, 'end_time', e.target.value)}
+                            required
+                          />
+                          {day.sessions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSessionFromDay(day.day_of_week, sIdx)}
+                              className={styles.removeSessionBtn}
+                              title="Delete this session"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.unavailableBanner}>
+                      Doctor is marked <strong>Unavailable / Off</strong> on {day.day_name}s (0 slots will be generated).
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Bottom Actions Card */}
+          <div className={styles.card} style={{ marginTop: 24, padding: 20 }}>
+            {!isAdmin && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                  Notes / Reason for Proposal (Optional)
+                </label>
+                <textarea
+                  value={proposalNotes}
+                  onChange={e => setProposalNotes(e.target.value)}
+                  placeholder="e.g. Revised schedule to accommodate surgery sessions..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13,
+                    minHeight: 60,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                  Save All 7 Days
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+                  Submits and validates all seven days together in a single atomic database transaction.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={savingWeekly || savingDayIdx !== null}
+                onClick={handleSaveWeeklySchedule}
+                className={styles.submitBtn}
+                style={{ width: 'auto', minWidth: 260, padding: '12px 24px', fontSize: 14 }}
+              >
+                {savingWeekly
+                  ? 'Saving Weekly Schedule...'
+                  : isAdmin
+                    ? '⚡ Save Entire Weekly Schedule (All 7 Days)'
+                    : '📤 Submit Full Weekly Schedule for Approval'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ TAB 2: ACTIVE SCHEDULE OVERVIEW ════════ */}
+      {activeTab === 'active' && (
+        <div className={styles.card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <h3>Currently Approved Working Schedule</h3>
+              <p className={styles.cardSub}>
+                Only appointments scheduled within these approved active hours are bookable by reception and patients.
+              </p>
+            </div>
+            <div style={{ background: '#f1f5f9', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+              Slot Duration: {selectedDoctorObj?.slot_duration || 30} mins
+            </div>
+          </div>
+
+          <div className={styles.weekGrid}>
+            {DAYS.map((dayName, dayIdx) => {
+              const daySlots = activeSchedules.filter(s => s.day_of_week === dayIdx && s.is_active)
+              return (
+                <div key={dayIdx} className={styles.dayCard}>
+                  <div className={styles.dayName}>{dayName}</div>
+                  <div className={styles.daySessions}>
+                    {daySlots.length === 0 ? (
+                      <span className={styles.emptyDay}>No active hours scheduled (Off)</span>
+                    ) : (
+                      daySlots.map(slot => (
+                        <div key={slot.id} className={styles.sessionChip}>
+                          <span>{slot.session_name || 'Working Hours'}:</span>
+                          <span>{formatTime(slot.start_time)} - {formatTime(slot.end_time)}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ════════ TAB 3: ADMIN APPROVAL QUEUE ════════ */}
       {isAdmin && activeTab === 'queue' && (
         <div className={styles.queueList}>
           {pendingProposals.length === 0 ? (
@@ -488,8 +918,12 @@ export default function DoctorSlots({ userRole }) {
                 <div className={styles.proposalHeader}>
                   <div className={styles.proposalMeta}>
                     <h4>Dr. {prop.doctor_name}</h4>
-                    <p>Submitted by <strong>{prop.submitted_by_username || 'Doctor'}</strong> · {new Date(prop.submitted_at).toLocaleString()}</p>
-                    <p style={{ marginTop: 4 }}>Slot Duration: <strong>{prop.slot_duration} minutes</strong></p>
+                    <p>
+                      Submitted by <strong>{prop.submitted_by_username || 'Doctor'}</strong> · {new Date(prop.submitted_at).toLocaleString()}
+                    </p>
+                    <p style={{ marginTop: 4 }}>
+                      Mode: <strong>{prop.schedule_mode === 'DAY_SPECIFIC' ? `Day-Specific (${DAYS[prop.target_day]})` : 'Full Weekly Schedule'}</strong> · Slot Duration: <strong>{prop.slot_duration} minutes</strong>
+                    </p>
                   </div>
                   <span className={`${styles.statusPill} ${styles.pending}`}>Pending Approval</span>
                 </div>
@@ -502,14 +936,20 @@ export default function DoctorSlots({ userRole }) {
 
                 {/* Proposed Sessions Grid */}
                 <div style={{ marginBottom: 16 }}>
-                  <h5 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#334155' }}>Proposed Working Hours:</h5>
+                  <h5 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#334155' }}>
+                    Proposed Working Hours:
+                  </h5>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {prop.proposed_slots.map((s, idx) => (
-                      <div key={idx} className={styles.sessionChip}>
-                        <span>{DAYS[s.day_of_week]}:</span>
-                        <span>{s.session_name || 'Session'} ({formatTime(s.start_time)} - {formatTime(s.end_time)})</span>
-                      </div>
-                    ))}
+                    {prop.proposed_slots.length === 0 ? (
+                      <span style={{ fontSize: 13, color: '#dc2626', fontWeight: 600 }}>Marked as Unavailable / Day Off</span>
+                    ) : (
+                      prop.proposed_slots.map((s, idx) => (
+                        <div key={idx} className={styles.sessionChip}>
+                          <span>{DAYS[s.day_of_week]}:</span>
+                          <span>{s.session_name || 'Session'} ({formatTime(s.start_time)} - {formatTime(s.end_time)})</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -566,7 +1006,7 @@ export default function DoctorSlots({ userRole }) {
                     onClick={() => handleApproveProposal(prop.id)}
                     className={styles.approveBtn}
                   >
-                    ✓ Approve & Activate
+                    ✓ Approve &amp; Activate
                   </button>
                 </div>
               </div>
@@ -575,201 +1015,7 @@ export default function DoctorSlots({ userRole }) {
         </div>
       )}
 
-      {/* TAB 2: ACTIVE SCHEDULE */}
-      {activeTab === 'active' && (
-        <div className={styles.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div>
-              <h3>Currently Approved Working Schedule</h3>
-              <p className={styles.cardSub}>
-                Only appointments scheduled within these approved active hours are bookable by reception and patients.
-              </p>
-            </div>
-            <div style={{ background: '#f1f5f9', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
-              Slot Duration: {selectedDoctorObj?.slot_duration || 30} mins
-            </div>
-          </div>
-
-          <div className={styles.weekGrid}>
-            {DAYS.map((dayName, dayIdx) => {
-              const daySlots = activeSchedules.filter(s => s.day_of_week === dayIdx && s.is_active)
-              return (
-                <div key={dayIdx} className={styles.dayCard}>
-                  <div className={styles.dayName}>{dayName}</div>
-                  <div className={styles.daySessions}>
-                    {daySlots.length === 0 ? (
-                      <span className={styles.emptyDay}>No active hours scheduled (Off)</span>
-                    ) : (
-                      daySlots.map(slot => (
-                        <div key={slot.id} className={styles.sessionChip}>
-                          <span>{slot.session_name || 'Working Hours'}:</span>
-                          <span>{formatTime(slot.start_time)} - {formatTime(slot.end_time)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: PROPOSE / DIRECT SCHEDULE BUILDER */}
-      {(activeTab === 'propose' || activeTab === 'direct') && (
-        <div className={styles.contentGrid}>
-          {/* Builder Form */}
-          <div className={styles.card}>
-            <h3>{isAdmin ? 'Direct Schedule Configuration' : 'Propose Working Hours'}</h3>
-            <p className={styles.cardSub}>
-              {isAdmin
-                ? 'Changes saved here activate immediately with zero wait time.'
-                : 'Propose your recurring schedule. Changes will become live upon Administrator approval.'}
-            </p>
-
-            <form onSubmit={isAdmin ? handleDirectScheduleSave : handleSubmitProposal}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  Appointment Slot Duration
-                </label>
-                <select
-                  value={slotDuration}
-                  onChange={e => setSlotDuration(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14 }}
-                >
-                  <option value={15}>15 Minutes per slot</option>
-                  <option value={20}>20 Minutes per slot</option>
-                  <option value={30}>30 Minutes per slot (Recommended)</option>
-                  <option value={45}>45 Minutes per slot</option>
-                  <option value={60}>60 Minutes per slot</option>
-                </select>
-              </div>
-
-              {/* Sessions List */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>Configured Sessions</label>
-                  <span style={{ fontSize: 11, color: '#64748b' }}>Non-overlapping sessions</span>
-                </div>
-
-                {sessions.map((sess, idx) => (
-                  <div key={idx} className={styles.sessionItem}>
-                    <div className={styles.sessionItemHeader}>
-                      <input
-                        type="text"
-                        value={sess.session_name}
-                        onChange={e => handleUpdateSession(idx, 'session_name', e.target.value)}
-                        className={styles.sessionNameInput}
-                        placeholder="e.g. Morning OPD"
-                      />
-                      {sessions.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSession(idx)}
-                          className={styles.removeSessionBtn}
-                          title="Remove session"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                    <div className={styles.timeRow}>
-                      <select
-                        value={sess.day_of_week}
-                        onChange={e => handleUpdateSession(idx, 'day_of_week', parseInt(e.target.value, 10))}
-                        style={{ flex: 1.5 }}
-                      >
-                        {DAYS.map((d, di) => (
-                          <option key={di} value={di}>{d}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="time"
-                        value={sess.start_time}
-                        onChange={e => handleUpdateSession(idx, 'start_time', e.target.value)}
-                        style={{ flex: 1 }}
-                        required
-                      />
-                      <span style={{ color: '#94a3b8' }}>to</span>
-                      <input
-                        type="time"
-                        value={sess.end_time}
-                        onChange={e => handleUpdateSession(idx, 'end_time', e.target.value)}
-                        style={{ flex: 1 }}
-                        required
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={handleAddSession}
-                  className={styles.addSessionBtn}
-                >
-                  + Add Another Session
-                </button>
-              </div>
-
-              {!isAdmin && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                    Notes / Reason for Proposal (Optional)
-                  </label>
-                  <textarea
-                    value={proposalNotes}
-                    onChange={e => setProposalNotes(e.target.value)}
-                    placeholder="e.g. Adjusting morning OPD timings to accommodate OT schedule..."
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, minHeight: 60, boxSizing: 'border-box' }}
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={saving}
-                className={styles.submitBtn}
-              >
-                {saving
-                  ? 'Saving...'
-                  : isAdmin
-                    ? '⚡ Save & Activate Schedule'
-                    : '📤 Submit Proposal for Approval'}
-              </button>
-            </form>
-          </div>
-
-          {/* Preview of Configured Sessions */}
-          <div className={styles.card}>
-            <h3>Schedule Preview</h3>
-            <p className={styles.cardSub}>Organized by day of week</p>
-            <div className={styles.weekGrid}>
-              {DAYS.map((dayName, dayIdx) => {
-                const daySessions = sessions.filter(s => s.day_of_week === dayIdx)
-                return (
-                  <div key={dayIdx} className={styles.dayCard}>
-                    <div className={styles.dayName}>{dayName}</div>
-                    <div className={styles.daySessions}>
-                      {daySessions.length === 0 ? (
-                        <span className={styles.emptyDay}>No sessions</span>
-                      ) : (
-                        daySessions.map((s, si) => (
-                          <div key={si} className={styles.sessionChip}>
-                            <span>{s.session_name}:</span>
-                            <span>{formatTime(s.start_time)} - {formatTime(s.end_time)}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: DATE OVERRIDES & LEAVES */}
+      {/* ════════ TAB 4: DATE OVERRIDES & LEAVES ════════ */}
       {activeTab === 'leaves' && (
         <div className={styles.contentGrid}>
           {/* Submit Leave / Override Form */}
@@ -852,17 +1098,15 @@ export default function DoctorSlots({ userRole }) {
                 </div>
               )}
 
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  Reason
+                  Reason / Notes
                 </label>
-                <input
-                  type="text"
+                <textarea
                   value={leaveForm.reason}
                   onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  placeholder="e.g. Attending dental surgery seminar"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, boxSizing: 'border-box' }}
-                  required
+                  placeholder="Reason for leave or blocked hours..."
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, minHeight: 60, boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -871,40 +1115,26 @@ export default function DoctorSlots({ userRole }) {
                 disabled={savingLeave}
                 className={styles.submitBtn}
               >
-                {savingLeave ? 'Submitting...' : 'Submit Override / Leave'}
+                {savingLeave ? 'Submitting...' : 'Submit Leave / Override'}
               </button>
             </form>
           </div>
 
-          {/* List of Existing Overrides */}
+          {/* Overrides List */}
           <div className={styles.card}>
-            <h3>Active & Pending Overrides</h3>
-            <p className={styles.cardSub}>Doctor leaves and clinic blocked windows</p>
+            <h3>Active &amp; Approved Overrides</h3>
+            <p className={styles.cardSub}>Date exceptions currently applied to appointment slot generation</p>
             {overrides.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No date-specific overrides recorded.</p>
+              <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No active overrides or leaves configured.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {overrides.map(ov => (
-                  <div
-                    key={ov.id}
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: 10,
-                      padding: '12px 16px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
+                  <div key={ov.id} className={styles.overrideItem}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontWeight: 800, fontSize: 14, color: '#0f172a' }}>{ov.date}</span>
-                        <span className={`${styles.statusPill} ${styles[ov.status.toLowerCase()] || styles.pending}`}>
-                          {ov.status}
-                        </span>
-                        <span style={{ fontSize: 11, background: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-                          {ov.override_type} {ov.leave_type ? `(${ov.leave_type})` : ''}
+                        <span className={`${styles.statusPill} ${ov.override_type === 'LEAVE' ? styles.rejected : styles.approved}`}>
+                          {ov.override_type}
                         </span>
                       </div>
                       <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
@@ -920,10 +1150,10 @@ export default function DoctorSlots({ userRole }) {
         </div>
       )}
 
-      {/* TAB 5: PROPOSAL HISTORY */}
+      {/* ════════ TAB 5: PROPOSAL HISTORY ════════ */}
       {activeTab === 'history' && (
         <div className={styles.card}>
-          <h3>Schedule Change & Proposal History</h3>
+          <h3>Schedule Change &amp; Proposal History</h3>
           <p className={styles.cardSub}>Complete audit trail of all doctor-submitted and administrator schedule revisions</p>
 
           {allProposals.length === 0 ? (
@@ -956,7 +1186,7 @@ export default function DoctorSlots({ userRole }) {
                     </div>
 
                     <p style={{ margin: '4px 0', fontSize: 12, color: '#475569' }}>
-                      Slot Duration: {prop.slot_duration} mins · {prop.proposed_slots.length} recurring session(s)
+                      Mode: {prop.schedule_mode === 'DAY_SPECIFIC' ? `Day-Specific (${DAYS[prop.target_day]})` : 'Full Weekly'} · Slot Duration: {prop.slot_duration} mins · {prop.proposed_slots.length} recurring session(s)
                     </p>
 
                     {prop.rejection_reason && (

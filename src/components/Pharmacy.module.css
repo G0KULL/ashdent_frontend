@@ -81,11 +81,14 @@
   background: rgba(255, 255, 255, 0.03);
   border-radius: 16px;
   border: 1px solid var(--border-light);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .table {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -687,6 +690,7 @@
 
 .financeTable {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
 }
 
@@ -748,5 +752,12 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+@media (max-width: 600px) {
+  .modal {
+    padding: 20px 16px !important;
+    width: 95% !important;
+    max-width: 95vw !important;
   }
 }

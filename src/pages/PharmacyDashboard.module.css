@@ -115,3 +115,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 640px) {
+  .dashboardContainer {
+    padding: 14px 10px;
+  }
+  .welcomeSection {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+  .welcomeSection h1 {
+    font-size: 20px;
+  }
+  .metricsGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

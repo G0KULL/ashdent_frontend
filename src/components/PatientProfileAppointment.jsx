@@ -9,7 +9,7 @@ export default function PatientProfileAppointment({ profile }) {
       <h3 className={styles.sectionTitle} style={{ margin: '0 0 16px 0', fontSize: 16, color: 'var(--slate-900)' }}>
         Appointments History
       </h3>
-      <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16 }}>
+      <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
         <table className={styles.treatmentListTable}>
           <thead>
             <tr>

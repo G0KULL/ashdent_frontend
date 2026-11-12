@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './AppointmentStatus.module.css'
 
 // Queue: Waiting → Engaged → Completed  (no "Queue/Scheduled" card on dashboard)
@@ -71,16 +72,12 @@ function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-const API_BASE = 'http://127.0.0.1:8000/api'
-
 export default function AppointmentStatus() {
   const [appointments, setAppointments] = useState([])
 
   const fetchAppointments = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
-      const res = await fetch(`${API_BASE}/appointments/today/`, { headers })
+      const res = await fetch(`${API_BASE}/appointments/today/`, { headers: getHeaders() })
       if (res.ok) setAppointments(await res.json())
     } catch (e) {
       console.error(e)

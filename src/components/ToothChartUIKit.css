@@ -13,9 +13,12 @@
 }
 
 .hms-modal {
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
   width: 800px;
-  border-radius: 4px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   position: relative;
   padding: 30px;
@@ -42,6 +45,9 @@
 .dentition-wrap {
   display: flex;
   flex-direction: column;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hms-select-all {
@@ -143,4 +149,21 @@
 
 .hms-btn-save:hover {
   background: #00acc1;
+}
+
+@media (max-width: 600px) {
+  .hms-modal {
+    padding: 18px 14px;
+    width: 95vw;
+  }
+  .hms-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+  .hms-footer button {
+    width: 100%;
+    padding: 10px 16px;
+  }
 }

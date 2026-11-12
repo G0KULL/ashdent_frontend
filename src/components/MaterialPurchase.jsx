@@ -211,7 +211,7 @@ export default function MaterialPurchase() {
           </form>
         </div>
       ) : activeTab === 'history' ? (
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'transparent', color: 'var(--slate-700)', fontSize: 13, textTransform: 'uppercase' }}>
@@ -242,8 +242,8 @@ export default function MaterialPurchase() {
           </table>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'transparent', color: 'var(--slate-700)', fontSize: 13, textTransform: 'uppercase' }}>

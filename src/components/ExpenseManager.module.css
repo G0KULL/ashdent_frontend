@@ -513,6 +513,7 @@
 .modalCard {
   background: #ffffff;
   width: 520px;
+  max-width: min(520px, 94vw);
   max-height: 90vh;
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);

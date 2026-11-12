@@ -12,7 +12,10 @@ export default function PatientProfileLaboratory({ viewPatient }) {
     setLoading(true);
     fetch(`${API_BASE}/laboratory/list/?patient=${viewPatient?.id}`, { headers: getHeaders() })
       .then(res => res.json())
-      .then(data => setLabOrders(Array.isArray(data) ? data : []))
+      .then(data => {
+        const arr = Array.isArray(data) ? data : [];
+        setLabOrders(arr.sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0)));
+      })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
@@ -32,7 +35,7 @@ export default function PatientProfileLaboratory({ viewPatient }) {
           + Add Lab Test
         </button>
       </div>
-      <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16 }}>
+      <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
         <table className={styles.treatmentListTable}>
           <thead>
             <tr>

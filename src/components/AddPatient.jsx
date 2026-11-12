@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePatients } from "../context/PatientContext";
 import styles from "./AddPatient.module.css";
 import Swal from "sweetalert2";
+import { API_BASE, getHeaders } from "../utils/api";
 
 const STATES = [
   "Andhra Pradesh",
@@ -33,9 +34,8 @@ const STATES = [
   "Uttarakhand",
   "West Bengal",
 ];
-const FEE_OPTIONS = ["Standard", "Premium", "Budget", "Insurance", "Waived"];
+
 const TYPE_OPTIONS = ["New", "Review", "Emergency", "Follow-up"];
-// Doctor options are loaded dynamically from database API
 
 export function calcAgeFromDob(dobStr, targetDate = new Date()) {
   if (!dobStr) return "";
@@ -95,46 +95,41 @@ export default function AddPatient({
   initialData = {},
   currentUser,
 }) {
-  const { groups, addGroup, addPatient, fetchPatients, nextId } = usePatients();
-  const [treatmentsList, setTreatmentsList] = useState([]);
+  const { fetchPatients, nextId } = usePatients();
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
     firstName: "",
     lastName: "",
     mobile: initialData.mobile || "",
-    state: "",
-    locality: "",
-    address: "",
-    pincode: "",
+    gender: "",
     dob: "",
     age: "",
-    gender: "",
+    address: "",
+    email: "",
+    occupation: "",
+    pincode: "",
+    locality: "",
+    state: "",
     country: "India",
-    remarks: "",
-    group: "",
-    fee: "",
-    consultationFee: "",
-    type: "",
-    patient_type: "",
-    medication: "",
-    pregnant: "",
     doctor: "",
-    surgery: "",
-    dentalHistory: "",
-    selectedTreatments: [],
-    prescriptionNotes: "",
-    paidAmount: 0,
+    patient_type: "",
+    time: "",
+    group: "",
+    visitType: "New",
+    consultationFee: "",
+    notes: "",
     paymentMethod: "Cash",
     cashReceived: "",
     cashReceivedTouched: false,
     transactionId: "",
     transactionDate: new Date().toISOString().split("T")[0],
+    paidAmount: 0,
     tax: "",
-    time: "",
   });
+
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous guard — prevents double-submit
+  const savingRef = useRef(false);
   const [saveAndPrint, setSaveAndPrint] = useState(false);
   const [groupPopup, setGroupPopup] = useState(false);
   const [newGroup, setNewGroup] = useState("");
@@ -146,90 +141,72 @@ export default function AddPatient({
   const [patientGroups, setPatientGroups] = useState([]);
   const [patientTypesList, setPatientTypesList] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [taxesList, setTaxesList] = useState([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/treatment-master/list/")
-      .then((r) => r.json())
-      .then((data) => setTreatmentsList(data))
-      .catch((e) => console.error("Error fetching treatments:", e));
-
-    fetch("http://127.0.0.1:8000/api/doctors/")
+    // 1. Fetch doctors dynamically
+    fetch(`${API_BASE}/doctors/`, { headers: getHeaders() })
       .then((r) => r.json())
       .then((data) => {
-        setDoctorsList(data);
-        if (currentUser?.role === "Doctor" && currentUser?.doctor_profile_id) {
-          const myDoc = data.find(
-            (d) => String(d.id) === String(currentUser.doctor_profile_id),
-          );
-          if (myDoc) {
-            const fee =
-              myDoc.consultation_fee !== undefined &&
-              myDoc.consultation_fee !== null
-                ? String(myDoc.consultation_fee)
-                : "";
-            setForm((f) => ({
-              ...f,
-              doctor: String(myDoc.id),
-              consultationFee: fee,
-            }));
+        if (Array.isArray(data)) {
+          setDoctorsList(data);
+          if (currentUser?.role === "Doctor" && currentUser?.doctor_profile_id) {
+            const myDoc = data.find(
+              (d) => String(d.id) === String(currentUser.doctor_profile_id)
+            );
+            if (myDoc) {
+              const fee =
+                myDoc.consultation_fee !== undefined &&
+                myDoc.consultation_fee !== null
+                  ? String(myDoc.consultation_fee)
+                  : "";
+              setForm((f) => ({
+                ...f,
+                doctor: String(myDoc.id),
+                consultationFee: fee || f.consultationFee,
+              }));
+            }
           }
         }
       })
       .catch((e) => console.error("Error fetching doctors:", e));
 
-    fetch("http://127.0.0.1:8000/api/patient-groups/")
+    // 2. Fetch patient groups
+    fetch(`${API_BASE}/patient-groups/`, { headers: getHeaders() })
       .then((r) => r.json())
       .then((data) => {
-        if (!data || data.length === 0) {
-          setPatientGroups([
-            { id: "ortho", name: "Ortho" },
-            { id: "implant", name: "Implant" },
-          ]);
-        } else {
-          // ensure Ortho and Implant exist if not present
-          const hasOrtho = data.some((g) => g.name.toLowerCase() === "ortho");
-          const hasImplant = data.some(
-            (g) => g.name.toLowerCase() === "implant",
-          );
-          const defaults = [];
-          if (!hasOrtho) defaults.push({ id: "mock-ortho", name: "Ortho" });
-          if (!hasImplant)
-            defaults.push({ id: "mock-implant", name: "Implant" });
-          setPatientGroups([...data, ...defaults]);
+        if (Array.isArray(data)) {
+          setPatientGroups(data);
         }
       })
-      .catch((e) => {
-        console.error("Error fetching patient groups:", e);
-        setPatientGroups([
-          { id: "ortho", name: "Ortho" },
-          { id: "implant", name: "Implant" },
-        ]);
-      });
+      .catch((e) => console.error("Error fetching patient groups:", e));
 
-    fetch("http://127.0.0.1:8000/api/dropdowns/payment_method/")
+    // 3. Fetch payment methods
+    fetch(`${API_BASE}/dropdowns/payment_method/`, { headers: getHeaders() })
       .then((r) => r.json())
-      .then((data) => setPaymentMethods(data.map((d) => d.name)))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPaymentMethods(data.map((d) => d.name));
+        }
+      })
       .catch((e) => console.error("Error fetching payment methods:", e));
 
-    fetch("http://127.0.0.1:8000/api/settings/taxes/")
+    // 4. Fetch patient types from master
+    fetch(`${API_BASE}/masters/patient-types/?active_only=true`, { headers: getHeaders() })
       .then((r) => r.json())
-      .then((data) => setTaxesList(data.filter((t) => t.is_active)))
-      .catch((e) => console.error("Error fetching taxes:", e));
-
-    fetch("http://127.0.0.1:8000/api/masters/patient-types/?active_only=true")
-      .then((r) => r.json())
-      .then((data) => setPatientTypesList(data))
-      .catch((e) =>
-        console.error("Error fetching patient types from Master:", e),
-      );
-  }, []);
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPatientTypesList(data);
+        }
+      })
+      .catch((e) => console.error("Error fetching patient types:", e));
+  }, [currentUser]);
 
   // Close popup on outside click
   useEffect(() => {
     function handler(e) {
-      if (popupRef.current && !popupRef.current.contains(e.target))
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
         setGroupPopup(false);
+      }
     }
     if (groupPopup) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -290,32 +267,10 @@ export default function AddPatient({
     if (errors.pincode) setErrors((e) => ({ ...e, pincode: "" }));
   }
 
-  function toggleTreatment(id) {
-    setForm((f) => {
-      const current = f.selectedTreatments;
-      if (current.includes(id))
-        return { ...f, selectedTreatments: current.filter((x) => x !== id) };
-      return { ...f, selectedTreatments: [...current, id] };
-    });
-  }
-
   const getPayableAmount = () => {
-    const baseAmount =
-      form.selectedTreatments.reduce((sum, t) => {
-        const tObj =
-          typeof t === "object"
-            ? t
-            : treatmentsList.find((x) => String(x.id) === String(t));
-        const cost =
-          tObj && tObj.cost !== undefined
-            ? tObj.cost
-            : tObj && tObj.price !== undefined
-              ? tObj.price
-              : 0;
-        return sum + (parseFloat(cost) || 0);
-      }, 0) + (parseFloat(form.consultationFee) || 0);
+    const fee = parseFloat(form.consultationFee) || 0;
     const taxRate = parseFloat(form.tax) || 0;
-    return baseAmount + (baseAmount * taxRate) / 100;
+    return fee + (fee * taxRate) / 100;
   };
 
   function handlePaymentMethodChange(val) {
@@ -358,20 +313,20 @@ export default function AddPatient({
 
   function validate() {
     const req = {
-      date: "Registration Date",
       firstName: "First name",
       lastName: "Last name",
       mobile: "Mobile number",
       gender: "Gender",
       dob: "Date of birth",
-      doctor: "Doctor",
+      doctor: "Assigned Doctor",
     };
     const e = {};
     for (const [k, label] of Object.entries(req)) {
-      if (!form[k]?.trim()) e[k] = `${label} is required`;
+      if (!String(form[k] || "").trim()) e[k] = `${label} is required`;
     }
-    if (form.mobile && !/^\d{10}$/.test(form.mobile))
+    if (form.mobile && !/^\d{10}$/.test(form.mobile.trim())) {
       e.mobile = "Enter a valid 10-digit mobile number";
+    }
     if (form.dob) {
       const todayStr = new Date().toISOString().split("T")[0];
       if (form.dob > todayStr) e.dob = "Date of birth cannot be in the future";
@@ -386,13 +341,17 @@ export default function AddPatient({
         e.pincode = "Pincode must be a 6-digit numeric value";
       }
     }
+    if (form.email && form.email.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        e.email = "Please enter a valid email address";
+      }
+    }
 
-    // --- PAYMENT VALIDATION ---
+    // Payment validation if consultation fee > 0
     const payable = getPayableAmount();
     if (payable > 0) {
       if (!form.paymentMethod || !form.paymentMethod.trim()) {
-        e.paymentMethod =
-          "Payment Method is required when payable amount is greater than ₹0";
+        e.paymentMethod = "Payment Method is required when consultation fee is entered";
       } else {
         const pmLower = form.paymentMethod.toLowerCase();
         if (pmLower === "cash") {
@@ -407,19 +366,17 @@ export default function AddPatient({
             e.cashReceived = "Cash Received must be greater than 0";
           }
         } else {
-          // Digital payment method (UPI, Card, Cheque, Online, Bank Transfer)
           const paidNum = parseFloat(form.paidAmount);
           if (isNaN(paidNum) || paidNum <= 0) {
             e.paidAmount = `Amount Paid must be greater than 0 for ${form.paymentMethod}`;
           } else if (paidNum > payable) {
-            e.paidAmount = `Amount Paid (₹${paidNum.toFixed(2)}) cannot exceed total payable amount (₹${payable.toFixed(2)})`;
+            e.paidAmount = `Amount Paid (₹${paidNum.toFixed(2)}) cannot exceed total payable (₹${payable.toFixed(2)})`;
           }
           if (!form.transactionId || !form.transactionId.trim()) {
             e.transactionId = "Transaction ID is required for digital payments";
           }
           if (!form.transactionDate || !form.transactionDate.trim()) {
-            e.transactionDate =
-              "Transaction Date is required for digital payments";
+            e.transactionDate = "Transaction Date is required for digital payments";
           }
         }
       }
@@ -441,15 +398,14 @@ export default function AddPatient({
   }
 
   async function handleSave() {
-    if (savingRef.current) return; // ← synchronous guard — blocks any re-entry instantly
+    if (savingRef.current) return;
     if (!validate()) return;
 
-    savingRef.current = true; // ← lock synchronously before any await
-    setIsSaving(true); // ← update UI state (button shows spinner)
+    savingRef.current = true;
+    setIsSaving(true);
 
     const payable = getPayableAmount();
-    const isCash =
-      form.paymentMethod && form.paymentMethod.toLowerCase() === "cash";
+    const isCash = form.paymentMethod && form.paymentMethod.toLowerCase() === "cash";
     const rawCash = isCash
       ? form.cashReceived !== ""
         ? form.cashReceived
@@ -468,20 +424,24 @@ export default function AddPatient({
     const intakeData = {
       date: form.date,
       name: `${form.firstName} ${form.lastName}`.trim(),
-      phone: form.mobile,
+      phone: form.mobile.trim(),
+      email: form.email ? form.email.trim() : null,
+      occupation: form.occupation ? form.occupation.trim() : null,
       dob: form.dob || null,
       age:
         form.age !== "" && form.age !== null && form.age !== undefined
           ? parseInt(form.age, 10)
           : null,
       gender: form.gender,
-      address: form.address || null,
+      address: [form.address, form.locality, form.city].filter(Boolean).join(', ') || null,
       pincode: form.pincode || null,
       doctor: form.doctor,
       group_ids: form.group ? [parseInt(form.group)] : [],
-      notes: form.remarks || form.dentalHistory,
-      treatments: form.selectedTreatments,
-      prescription_notes: form.prescriptionNotes,
+      notes: form.notes || null,
+      consultation_fee: form.consultationFee || 0,
+      patient_type: form.patient_type || null,
+      time: form.time || null,
+      visit_type: form.visitType || "New",
       paid_amount: payable > 0 ? effectivePaid : 0,
       cash_received: payable > 0 && isCash ? cashNum : 0,
       balance_returned: payable > 0 && isCash ? balanceReturned : 0,
@@ -489,24 +449,18 @@ export default function AddPatient({
       transaction_id: payable > 0 && !isCash ? form.transactionId : "",
       transaction_date: payable > 0 && !isCash ? form.transactionDate : "",
       tax: form.tax,
-      consultation_fee: form.consultationFee,
-      fee_type: form.fee,
-      visit_type: form.type,
-      patient_type: form.patient_type,
-      time: form.time,
     };
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/patient/create/", {
+      const res = await fetch(`${API_BASE}/patient/create/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify(intakeData),
       });
 
       if (res.ok) {
-        // Show success alert immediately — don't wait for fetchPatients
         Swal.fire({
-          title: "✅ Patient Saved!",
+          title: "✓ Patient Saved!",
           text: "Patient has been registered successfully.",
           icon: "success",
           confirmButtonColor: "#10b981",
@@ -517,8 +471,7 @@ export default function AddPatient({
           if (saveAndPrint) window.print();
           onSaved();
         });
-
-        fetchPatients(""); // refresh in background — no await
+        fetchPatients("");
       } else {
         const errData = await res.json();
         console.error("Save Error:", errData);
@@ -548,113 +501,86 @@ export default function AddPatient({
           icon: "error",
           confirmButtonColor: "#ef4444",
         });
-        savingRef.current = false; // re-enable on error so user can fix and retry
-        setIsSaving(false);
       }
     } catch (err) {
-      console.error("Backend error:", err);
+      console.error("Network Error:", err);
       Swal.fire({
-        title: "Error!",
-        text: "Failed to connect to backend",
+        title: "Network Error",
+        text: "Could not connect to server.",
         icon: "error",
         confirmButtonColor: "#ef4444",
       });
-      savingRef.current = false; // re-enable on network error
+    } finally {
       setIsSaving(false);
+      savingRef.current = false;
     }
   }
 
   async function handleAddGroup() {
     const trimmed = newGroup.trim();
     if (!trimmed) {
-      setGroupError("Enter a group name");
+      setGroupError("Group name required");
       return;
     }
-    if (
-      patientGroups.some((g) => g.name.toLowerCase() === trimmed.toLowerCase())
-    ) {
-      setGroupError("Group already exists");
-      return;
-    }
-
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/patient-groups/", {
+      const res = await fetch(`${API_BASE}/patient-groups/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ name: trimmed }),
       });
       if (res.ok) {
-        const newGrp = await res.json();
-        setPatientGroups((prev) => [...prev, newGrp]);
-        setForm((f) => ({ ...f, group: String(newGrp.id) }));
+        const saved = await res.json();
+        setPatientGroups((prev) => [...prev, saved]);
+        setForm((f) => ({ ...f, group: String(saved.id) }));
         setNewGroup("");
-        setGroupError("");
         setGroupPopup(false);
+        setGroupError("");
+      } else {
+        setGroupError("Failed to save group");
       }
-    } catch (err) {
-      setGroupError("Failed to create group");
+    } catch {
+      setGroupError("Network error");
     }
   }
 
   const payable = getPayableAmount();
-  const isCash =
-    form.paymentMethod && form.paymentMethod.toLowerCase() === "cash";
-  const displayCashVal =
-    form.cashReceived !== ""
+  const isCash = form.paymentMethod && form.paymentMethod.toLowerCase() === "cash";
+  const rawCash = isCash
+    ? form.cashReceived !== ""
       ? form.cashReceived
       : !form.cashReceivedTouched && payable > 0
         ? payable.toFixed(2)
-        : "";
-  const cashNum = parseFloat(displayCashVal);
-  const isCashNumValid = !isNaN(cashNum) && cashNum >= 0;
-  const cashDiff = isCashNumValid ? cashNum - payable : 0;
+        : "0"
+    : "0";
+  const cashNum = parseFloat(rawCash) || 0;
+  const cashDiff = cashNum - payable;
   const effectivePaid = isCash
-    ? isCashNumValid
+    ? cashNum > 0
       ? Math.min(cashNum, payable)
       : 0
-    : parseFloat(form.paidAmount) || payable;
+    : parseFloat(form.paidAmount) || 0;
   const balanceDue = Math.max(0, payable - effectivePaid);
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add Patient"
-    >
+    <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <div className={styles.headerIcon}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="9" cy="8" r="4" fill="white" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="M2 20c0-3.866 3.134-7 7-7s7 3.134 7 7"
-                  stroke="white"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M17 7v6M14 10h6"
-                  stroke="white"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
+                  d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                  fill="white"
                 />
               </svg>
             </div>
             <div>
-              <h2 className={styles.headerTitle}>Add New Patient</h2>
-              <p className={styles.headerSub}>
-                Fill in the patient details below
-              </p>
+              <h2 className={styles.headerTitle}>New Patient Registration</h2>
+              <p className={styles.headerSubtitle}>Complete patient intake profile for dental records</p>
             </div>
           </div>
-          <button
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close"
-          >
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
               <path
                 d="M4 4l12 12M16 4L4 16"
@@ -667,48 +593,16 @@ export default function AddPatient({
         </div>
 
         <div className={styles.body}>
-          {/* Auto IDs row */}
-          <div className={styles.autoRow}>
-            <div className={styles.autoField}>
-              <label>Registration ID</label>
-              <span className={styles.autoValue}>{regId}</span>
-            </div>
-            <div className={styles.autoField}>
-              <label>Rec No</label>
-              <span className={styles.autoValue}>
-                {regId.replace("REG", "REC")}
-              </span>
-            </div>
-            <div className={styles.autoField}>
-              <label>Created At</label>
-              <span className={styles.autoValue}>
-                {new Date().toLocaleString("en-IN", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-              </span>
-            </div>
-          </div>
 
-          {/* ── Section 1: Basic Info ── */}
+          {/* ════════ SECTION A: Basic Patient Information ════════ */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>
-              <span
-                className={styles.sectionDot}
-                style={{ background: "#1E88E5" }}
-              />
-              Basic Information
+              <span className={styles.sectionDot} style={{ background: "#0284c7" }} />
+              Section A – Basic Patient Information
             </div>
             <div className={styles.grid2}>
-              <Field label="Registration Date *" error={errors.date}>
-                <input
-                  type="date"
-                  className={err(errors.date)}
-                  value={form.date}
-                  onChange={(e) => set("date", e.target.value)}
-                />
-              </Field>
-              <Field label="First Name *" error={errors.firstName}>
+              {/* Row 1: Patient Name (First Name | Last Name) */}
+              <Field label="First Name" required error={errors.firstName}>
                 <input
                   className={err(errors.firstName)}
                   placeholder="e.g. Rahul"
@@ -716,7 +610,7 @@ export default function AddPatient({
                   onChange={(e) => set("firstName", e.target.value)}
                 />
               </Field>
-              <Field label="Last Name *" error={errors.lastName}>
+              <Field label="Last Name" required error={errors.lastName}>
                 <input
                   className={err(errors.lastName)}
                   placeholder="e.g. Menon"
@@ -724,18 +618,32 @@ export default function AddPatient({
                   onChange={(e) => set("lastName", e.target.value)}
                 />
               </Field>
-              <Field label="Mobile No *" error={errors.mobile}>
+
+              {/* Row 2: Patient ID (read-only) | Registration Date (read-only) */}
+              <Field label="Patient ID (Auto-Generated)">
                 <input
-                  className={err(errors.mobile)}
-                  placeholder="10-digit number"
-                  maxLength={10}
-                  value={form.mobile}
-                  onChange={(e) =>
-                    set("mobile", e.target.value.replace(/\D/, ""))
-                  }
+                  type="text"
+                  readOnly
+                  value={regId}
+                  className={styles.readOnly}
+                  title="System-generated patient identification code"
                 />
               </Field>
-              <Field label="Date of Birth *" error={errors.dob}>
+              <Field label="Registration Date">
+                <input
+                  type="text"
+                  readOnly
+                  value={new Date().toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  className={styles.readOnly}
+                />
+              </Field>
+
+              {/* Row 3: Date of Birth | Age */}
+              <Field label="Date of Birth" required error={errors.dob}>
                 <input
                   type="date"
                   className={err(errors.dob)}
@@ -743,15 +651,17 @@ export default function AddPatient({
                   onChange={(e) => handleDobChange(e.target.value)}
                 />
               </Field>
-              <Field label="Age" error={errors.age}>
+              <Field label="Age (Years)" error={errors.age}>
                 <input
-                  placeholder="Auto-calculated / manual"
+                  placeholder="Auto-calculated from DOB or manual"
                   value={form.age}
                   onChange={(e) => handleAgeChange(e.target.value)}
                   className={err(errors.age)}
                 />
               </Field>
-              <Field label="Gender *" error={errors.gender}>
+
+              {/* Row 4: Gender | Patient Type */}
+              <Field label="Gender" required error={errors.gender}>
                 <select
                   className={err(errors.gender)}
                   value={form.gender}
@@ -763,7 +673,7 @@ export default function AddPatient({
                   <option>Other</option>
                 </select>
               </Field>
-              <Field label="Patient Type">
+              <Field label="Patient Type (Optional)">
                 <select
                   value={form.patient_type}
                   onChange={(e) => set("patient_type", e.target.value)}
@@ -776,43 +686,42 @@ export default function AddPatient({
                   ))}
                 </select>
               </Field>
-              <Field label="Appointment Time">
+            </div>
+          </div>
+
+          {/* ════════ SECTION B: Contact Information ════════ */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span className={styles.sectionDot} style={{ background: "#10b981" }} />
+              Section B – Contact Information
+            </div>
+            <div className={styles.grid2}>
+              {/* Row 1: Phone / Mobile | Email */}
+              <Field label="Mobile Number" required error={errors.mobile}>
                 <input
-                  type="time"
-                  value={form.time}
-                  onChange={(e) => set("time", e.target.value)}
+                  className={err(errors.mobile)}
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
+                  value={form.mobile}
+                  onChange={(e) => set("mobile", e.target.value.replace(/\D/g, ""))}
                 />
               </Field>
-              <Field label="Country">
+              <Field label="Email Address (Optional)" error={errors.email}>
                 <input
-                  value={form.country}
-                  onChange={(e) => set("country", e.target.value)}
+                  type="email"
+                  className={err(errors.email)}
+                  placeholder="e.g. patient@example.com"
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
                 />
               </Field>
-              <Field label="State">
-                <select
-                  value={form.state}
-                  onChange={(e) => set("state", e.target.value)}
-                >
-                  <option value="">Select state</option>
-                  {STATES.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Locality">
+
+              {/* Row 2: Locality / City | Pincode */}
+              <Field label="Locality / City">
                 <input
                   placeholder="City / Town"
                   value={form.locality}
                   onChange={(e) => set("locality", e.target.value)}
-                />
-              </Field>
-              <Field label="Address" span2>
-                <textarea
-                  rows={2}
-                  placeholder="Full address"
-                  value={form.address}
-                  onChange={(e) => set("address", e.target.value)}
                 />
               </Field>
               <Field label="Pincode" error={errors.pincode}>
@@ -824,30 +733,48 @@ export default function AddPatient({
                   className={err(errors.pincode)}
                 />
               </Field>
+
+              {/* Row 3: State | Country */}
+              <Field label="State">
+                <select value={form.state} onChange={(e) => set("state", e.target.value)}>
+                  <option value="">Select state</option>
+                  {STATES.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Country">
+                <input value={form.country} onChange={(e) => set("country", e.target.value)} />
+              </Field>
+
+              {/* Row 4: Full Address (Full-width span 2) */}
+              <Field label="Full Address" span2>
+                <textarea
+                  rows={2}
+                  placeholder="Street address, building, apartment, flat no..."
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                />
+              </Field>
             </div>
           </div>
 
-          {/* ── Section 2: Medical History ── */}
+          {/* ════════ SECTION C: Additional Information ════════ */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>
-              <span
-                className={styles.sectionDot}
-                style={{ background: "#4CAF50" }}
-              />
-              Medical History
+              <span className={styles.sectionDot} style={{ background: "#f59e0b" }} />
+              Section C – Additional Information
             </div>
             <div className={styles.grid2}>
-              <Field label="Patient Remarks" span2>
-                <textarea
-                  rows={2}
-                  placeholder="Notes or remarks…"
-                  value={form.remarks}
-                  onChange={(e) => set("remarks", e.target.value)}
+              {/* Row 1: Occupation | Patient Group */}
+              <Field label="Occupation (Optional)">
+                <input
+                  placeholder="e.g. Teacher, Engineer, Student"
+                  value={form.occupation}
+                  onChange={(e) => set("occupation", e.target.value)}
                 />
               </Field>
-
-              {/* Patient Group with + button */}
-              <Field label="Patient Group">
+              <Field label="Patient Group (Optional)">
                 <div className={styles.groupRow} ref={popupRef}>
                   <select
                     value={form.group}
@@ -865,7 +792,7 @@ export default function AddPatient({
                     type="button"
                     className={styles.addGroupBtn}
                     onClick={() => setGroupPopup((o) => !o)}
-                    title="Add new group"
+                    title="Add new patient group"
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                       <path
@@ -881,7 +808,7 @@ export default function AddPatient({
                       <p className={styles.groupPopupTitle}>Add New Group</p>
                       <input
                         className={styles.groupInput}
-                        placeholder="e.g. Pediatric"
+                        placeholder="e.g. VIP, Ortho, Senior"
                         value={newGroup}
                         onChange={(e) => {
                           setNewGroup(e.target.value);
@@ -890,17 +817,17 @@ export default function AddPatient({
                         onKeyDown={(e) => e.key === "Enter" && handleAddGroup()}
                         autoFocus
                       />
-                      {groupError && (
-                        <p className={styles.groupErr}>{groupError}</p>
-                      )}
+                      {groupError && <p className={styles.groupErr}>{groupError}</p>}
                       <div className={styles.groupPopupBtns}>
                         <button
+                          type="button"
                           className={styles.groupCancelBtn}
                           onClick={() => setGroupPopup(false)}
                         >
                           Cancel
                         </button>
                         <button
+                          type="button"
                           className={styles.groupSaveBtn}
                           onClick={handleAddGroup}
                         >
@@ -912,7 +839,46 @@ export default function AddPatient({
                 </div>
               </Field>
 
-              <Field label="Assign Doctor *" error={errors.doctor}>
+              {/* Row 2: Visit Type | Appointment Time */}
+              <Field label="Visit Type">
+                <select
+                  value={form.visitType}
+                  onChange={(e) => set("visitType", e.target.value)}
+                >
+                  {TYPE_OPTIONS.map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Appointment Time (Optional)">
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={(e) => set("time", e.target.value)}
+                />
+              </Field>
+
+              {/* Row 3: Clinical Notes (Full-width span 2) */}
+              <Field label="Clinical / Reception Notes (Optional)" span2>
+                <textarea
+                  rows={2}
+                  placeholder="Chief complaint or initial registration notes..."
+                  value={form.notes}
+                  onChange={(e) => set("notes", e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+
+          {/* ════════ SECTION D: Clinical Assignment & Consultation Fee ════════ */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              <span className={styles.sectionDot} style={{ background: "#8b5cf6" }} />
+              Section D – Clinical Assignment &amp; Consultation Fee
+            </div>
+            <div className={styles.grid2}>
+              {/* Row 1: Doctor Selection | Consultation Fee */}
+              <Field label="Assigned Doctor" required error={errors.doctor}>
                 <select
                   className={err(errors.doctor)}
                   value={form.doctor}
@@ -922,46 +888,14 @@ export default function AddPatient({
                   {doctorsList.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}{" "}
-                      {d.consultation_fee !== undefined &&
-                      d.consultation_fee !== null
+                      {d.consultation_fee !== undefined && d.consultation_fee !== null
                         ? `(₹${d.consultation_fee})`
                         : ""}
                     </option>
                   ))}
                 </select>
               </Field>
-            </div>
-          </div>
 
-          {/* ── Section 4: Consultation & Fees ── */}
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>
-              <span
-                className={styles.sectionDot}
-                style={{ background: "#FF5722" }}
-              />
-              Consultation & Fees
-            </div>
-            <div className={styles.grid2}>
-              <Field label="Prescription Notes" span2>
-                <textarea
-                  rows={2}
-                  placeholder="Medicine / Instructions..."
-                  value={form.prescriptionNotes}
-                  onChange={(e) => set("prescriptionNotes", e.target.value)}
-                />
-              </Field>
-              <Field label="Type of Fee">
-                <select
-                  value={form.type}
-                  onChange={(e) => set("type", e.target.value)}
-                >
-                  <option value="">Select type</option>
-                  {TYPE_OPTIONS.map((o) => (
-                    <option key={o}>{o}</option>
-                  ))}
-                </select>
-              </Field>
               <Field label="Consultation Fee (₹) (Optional)">
                 <input
                   type="number"
@@ -970,16 +904,15 @@ export default function AddPatient({
                   onChange={(e) => set("consultationFee", e.target.value)}
                 />
               </Field>
-              {/* ── Conditional Payment Section ── */}
-              {payable > 0 ? (
+
+              {/* Conditional Consultation Fee Payment collection if fee > 0 */}
+              {payable > 0 && (
                 <>
-                  <Field label="Payment Method *" error={errors.paymentMethod}>
+                  <Field label="Payment Method" required error={errors.paymentMethod}>
                     <select
                       className={err(errors.paymentMethod)}
                       value={form.paymentMethod}
-                      onChange={(e) =>
-                        handlePaymentMethodChange(e.target.value)
-                      }
+                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
                     >
                       <option value="">Select Payment Method</option>
                       {paymentMethods.length > 0 ? (
@@ -990,39 +923,30 @@ export default function AddPatient({
                           <option>Card</option>
                           <option>UPI</option>
                           <option>Cheque</option>
-                          <option>Insurance</option>
                           <option>Online</option>
                         </>
                       )}
                     </select>
                   </Field>
 
+                  <Field label="Amount to Pay (₹)">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`₹${payable.toFixed(2)}`}
+                      className={styles.readOnly}
+                    />
+                  </Field>
+
                   {isCash ? (
                     <>
-                      <Field label="Amount to Pay (₹)">
-                        <input
-                          type="text"
-                          readOnly
-                          value={`₹${payable.toFixed(2)}`}
-                          style={{
-                            background: "#f8fafc",
-                            cursor: "default",
-                            fontWeight: 700,
-                            color: "#1e293b",
-                          }}
-                        />
-                      </Field>
-
-                      <Field
-                        label="Cash Received (₹) *"
-                        error={errors.cashReceived}
-                      >
+                      <Field label="Cash Received (₹)" required error={errors.cashReceived}>
                         <input
                           type="number"
                           step="0.01"
                           min="0"
                           placeholder="0.00"
-                          // value={displayCashVal}
+                          value={form.cashReceived}
                           onChange={(e) => {
                             const val = e.target.value;
                             setForm((f) => ({
@@ -1031,10 +955,7 @@ export default function AddPatient({
                               cashReceivedTouched: true,
                             }));
                             if (errors.cashReceived)
-                              setErrors((prev) => ({
-                                ...prev,
-                                cashReceived: "",
-                              }));
+                              setErrors((prev) => ({ ...prev, cashReceived: "" }));
                           }}
                           className={err(errors.cashReceived)}
                         />
@@ -1050,10 +971,10 @@ export default function AddPatient({
                             borderRadius: "8px",
                             border:
                               cashDiff < 0
-                                ? "1px solid #fca5a5"
+                                ? "1.5px solid #fca5a5"
                                 : cashDiff > 0
-                                  ? "1px solid #86efac"
-                                  : "1px solid #cbd5e1",
+                                  ? "1.5px solid #86efac"
+                                  : "1.5px solid #cbd5e1",
                             background:
                               cashDiff < 0
                                 ? "#fef2f2"
@@ -1067,50 +988,30 @@ export default function AddPatient({
                                   ? "#15803d"
                                   : "#334155",
                             fontWeight: 700,
-                            fontSize: "14px",
+                            fontSize: "13.5px",
                             justifyContent: "space-between",
                             boxSizing: "border-box",
+                            width: "100%",
                           }}
                         >
                           {cashDiff < 0 ? (
                             <>
-                              <span>
-                                ⚠️ Amount short by ₹
-                                {Math.abs(cashDiff).toFixed(2)}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  color: "#dc2626",
-                                }}
-                              >
+                              <span>Short by ₹{Math.abs(cashDiff).toFixed(2)}</span>
+                              <span style={{ fontSize: "11px", fontWeight: 600, color: "#dc2626" }}>
                                 Partial
                               </span>
                             </>
                           ) : cashDiff > 0 ? (
                             <>
                               <span>₹{cashDiff.toFixed(2)}</span>
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  color: "#16a34a",
-                                }}
-                              >
+                              <span style={{ fontSize: "11px", fontWeight: 600, color: "#16a34a" }}>
                                 Return to patient
                               </span>
                             </>
                           ) : (
                             <>
                               <span>₹0.00</span>
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 500,
-                                  color: "#64748b",
-                                }}
-                              >
+                              <span style={{ fontSize: "11px", fontWeight: 500, color: "#64748b" }}>
                                 Exact amount
                               </span>
                             </>
@@ -1120,149 +1021,60 @@ export default function AddPatient({
                     </>
                   ) : (
                     <>
-                      <Field label="Amount to Pay (₹)">
+                      <Field label="Amount Paid (₹)" required error={errors.paidAmount}>
                         <input
-                          type="text"
-                          readOnly
-                          value={`₹${payable.toFixed(2)}`}
-                          style={{
-                            background: "#f8fafc",
-                            cursor: "default",
-                            fontWeight: 700,
-                            color: "#1e293b",
-                          }}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={form.paidAmount}
+                          onChange={(e) => set("paidAmount", e.target.value)}
+                          className={err(errors.paidAmount)}
                         />
                       </Field>
 
-                      <Field
-                        label="Transaction ID *"
-                        error={errors.transactionId}
-                      >
-                        <input
-                          type="text"
-                          placeholder="e.g. UPI-987654321 / TXN-00123"
-                          value={form.transactionId}
-                          onChange={(e) => {
-                            set("transactionId", e.target.value);
-                            if (errors.transactionId)
-                              setErrors((prev) => ({
-                                ...prev,
-                                transactionId: "",
-                              }));
-                          }}
-                          className={err(errors.transactionId)}
-                        />
-                      </Field>
-
-                      <Field
-                        label="Transaction Date *"
-                        error={errors.transactionDate}
-                      >
+                      <Field label="Transaction Date" required error={errors.transactionDate}>
                         <input
                           type="date"
                           value={form.transactionDate}
-                          onChange={(e) => {
-                            set("transactionDate", e.target.value);
-                            if (errors.transactionDate)
-                              setErrors((prev) => ({
-                                ...prev,
-                                transactionDate: "",
-                              }));
-                          }}
+                          onChange={(e) => set("transactionDate", e.target.value)}
                           className={err(errors.transactionDate)}
+                        />
+                      </Field>
+
+                      <Field label="Transaction ID" required error={errors.transactionId} span2>
+                        <input
+                          placeholder="Bank reference, UPI ref, or check no..."
+                          value={form.transactionId}
+                          onChange={(e) => set("transactionId", e.target.value)}
+                          className={err(errors.transactionId)}
                         />
                       </Field>
                     </>
                   )}
-                </>
-              ) : (
-                <div
-                  style={{
-                    gridColumn: "span 2",
-                    padding: "12px 16px",
-                    borderRadius: "8px",
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    color: "#64748b",
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span>ℹ️</span>
-                  <span>
-                    Payable Amount is ₹0.00. Payment details are not required.
-                  </span>
-                </div>
-              )}
 
-              {/* ── Bill Summary ── */}
-              <div
-                style={{
-                  gridColumn: "span 2",
-                  background: "transparent",
-                  padding: "16px",
-                  borderRadius: "12px",
-                  border: "1px solid var(--border-light)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: "10px",
-                }}
-              >
-                <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Total Bill Amount
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "20px",
-                      fontWeight: 800,
-                      color: "var(--slate-900)",
-                    }}
-                  >
-                    ₹{payable.toFixed(2)}
-                  </p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Balance Due
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "24px",
-                      fontWeight: 900,
-                      color: balanceDue > 0 ? "#ef4444" : "#10b981",
-                    }}
-                  >
-                    ₹{balanceDue.toFixed(2)}
-                  </p>
-                </div>
-              </div>
+                  {/* Summary Banner */}
+                  <div className={styles.paymentSummaryBox}>
+                    <div>
+                      <p className={styles.summaryLabel}>Total Consultation Fee</p>
+                      <p className={styles.summaryVal}>₹{payable.toFixed(2)}</p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <p className={styles.summaryLabel}>Balance Due</p>
+                      <p
+                        className={styles.summaryDue}
+                        style={{ color: balanceDue > 0 ? "#ef4444" : "#10b981" }}
+                      >
+                        ₹{balanceDue.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Modal Footer */}
         <div className={styles.footer}>
           <label className={styles.printCheck}>
             <input
@@ -1270,18 +1082,17 @@ export default function AddPatient({
               checked={saveAndPrint}
               onChange={(e) => setSaveAndPrint(e.target.checked)}
             />
-            <span className={styles.checkCustom} />
-            Save &amp; Print
+            <span>Save &amp; Print Case Sheet</span>
           </label>
           <div className={styles.footerBtns}>
-            <button className={styles.cancelBtn} onClick={onClose}>
+            <button type="button" className={styles.cancelBtn} onClick={onClose}>
               Cancel
             </button>
             <button
+              type="button"
               className={styles.saveBtn}
               onClick={handleSave}
               disabled={isSaving}
-              style={isSaving ? { opacity: 0.7, cursor: "not-allowed" } : {}}
             >
               {isSaving ? (
                 <svg
@@ -1323,10 +1134,18 @@ export default function AddPatient({
 function err(e) {
   return e ? styles.inputError : "";
 }
-function Field({ label, children, error, span2 }) {
+
+function Field({ label, children, error, span2, required }) {
+  const isReq = required || (typeof label === "string" && label.includes("*"));
+  const cleanLabel =
+    typeof label === "string" ? label.replace("*", "").trim() : label;
+
   return (
     <div className={`${styles.field} ${span2 ? styles.span2 : ""}`}>
-      <label className={styles.label}>{label}</label>
+      <label className={styles.label}>
+        <span>{cleanLabel}</span>
+        {isReq && <span className={styles.req}>*</span>}
+      </label>
       {children}
       {error && <p className={styles.errorMsg}>{error}</p>}
     </div>

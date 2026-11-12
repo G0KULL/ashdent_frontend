@@ -1,25 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import styles from './TreatmentPlansPage.module.css';
 import { ConsultationProvider, useConsultation } from '../context/ConsultationContext';
+import { usePatients } from '../context/PatientContext';
 import TopHeader from '../components/consultation/TopHeader';
-import { X } from 'lucide-react';
+import { X, LayoutList, LayoutGrid, Edit2, Trash2, FileText, Pill } from 'lucide-react';
 import ClinicalNotesModal from '../components/ClinicalNotesModal';
 import PrescriptionModal from '../components/PrescriptionModal';
 import MedicationsSection from '../components/MedicationsSection';
 import InvestigationsSection from '../components/investigations/InvestigationsSection';
-import InvoicePreviewModal from '../components/InvoicePreviewModal';
+import EstimateModal from '../components/EstimateModal';
 import ClinicalCombobox from '../components/ClinicalCombobox';
 
-const PageContent = () => {
+const PageContent = ({ defaultFilter: propDefaultFilter }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { patient, prescriptions } = useConsultation();
-  const { caseId } = useParams();
+  const { caseId: paramCaseId } = useParams();
+  const { activePatient } = usePatients();
   
-  const storageKey = `ashdent_treatment_${caseId || 'new'}`;
+  const caseId = paramCaseId || location.state?.patientId || activePatient?.id || 'new';
+  const storageKey = `ashdent_treatment_${caseId}`;
   const [assignedDoctor, setAssignedDoctor] = useState(location.state?.doctorName || '');
   const [assignedDoctorId, setAssignedDoctorId] = useState(location.state?.doctorId || null);
+  const [planId, setPlanId] = useState(null);
   
   const [plans, setPlans] = useState(() => {
     let data = [];
@@ -62,43 +66,105 @@ const PageContent = () => {
     return data;
   });
 
-  // Helper to persist plans to backend database
+  // View switcher & filter state (Strategy 1: Dual-Mode Switcher)
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('ashdent_treatment_view_mode') || 'table';
+    } catch (e) {
+      return 'table';
+    }
+  });
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('ashdent_treatment_view_mode', mode);
+    } catch (e) {}
+  };
+
+  const initialFilter = location.state?.defaultFilter || location.state?.filter || propDefaultFilter || 'All';
+  const [tableFilter, setTableFilter] = useState(initialFilter);
+
+  const getNormalizedStatus = (status) => {
+    if (status === 'Proposed' || status === 'Pending Patient Approval' || !status) return 'Planned';
+    return status;
+  };
+
+  const filteredPlans = useMemo(() => {
+    if (tableFilter === 'All') return plans;
+    return plans.filter(p => getNormalizedStatus(p.status) === tableFilter);
+  }, [plans, tableFilter]);
+
+  const planCounts = useMemo(() => {
+    const planned = plans.filter(p => getNormalizedStatus(p.status) === 'Planned').length;
+    const inProgress = plans.filter(p => getNormalizedStatus(p.status) === 'In Progress').length;
+    const completed = plans.filter(p => getNormalizedStatus(p.status) === 'Completed').length;
+    return { all: plans.length, planned, inProgress, completed };
+  }, [plans]);
+
+  const totalEstimatedCost = useMemo(() => {
+    return filteredPlans.reduce((sum, p) => sum + (parseFloat(p.finalAmount || p.cost || 400) || 0), 0);
+  }, [filteredPlans]);
+
+  // Helper to persist plans to backend database with deduplication
   const savePlansToBackend = React.useCallback(async (plansToSave) => {
     if (!caseId || caseId === 'new') return;
     try {
       const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
       const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' };
-      await fetch(`http://127.0.0.1:8000/api/patients/${caseId}/treatment-plans/`, {
+      
+      const uniqueItems = [];
+      const seen = new Set();
+      (plansToSave || []).forEach(p => {
+        const k = `${p.tooth || ''}_${(p.procedure || '').toLowerCase().trim()}_${(p.surface || 'All').toLowerCase().trim()}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          uniqueItems.push(p);
+        }
+      });
+
+      const res = await fetch(`http://127.0.0.1:8000/api/patients/${caseId}/treatment-plans/`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
+          plan_id: planId || undefined,
           title: 'Comprehensive Dental Treatment Plan',
           status: 'Proposed',
           doctor_id: assignedDoctorId || location.state?.doctorId || null,
-          items: plansToSave
+          items: uniqueItems
         })
       });
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData.plan_id) setPlanId(resData.plan_id);
+      }
     } catch (err) {
       console.warn("Could not persist treatment plan to backend:", err);
     }
-  }, [caseId]);
+  }, [caseId, planId, assignedDoctorId, location.state]);
 
-  // Load persistent plans from database on mount
+  // Load persistent plans from database on mount (primary plan only to prevent duplication loop)
   React.useEffect(() => {
     if (!caseId || caseId === 'new') return;
     fetch(`http://127.0.0.1:8000/api/patients/${caseId}/treatment-plans/`)
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          const firstDoc = data[0].doctor_name || data[0].doctor;
+          const primaryPlan = data[0];
+          setPlanId(primaryPlan.id);
+          const firstDoc = primaryPlan.doctor_name || primaryPlan.doctor;
           if (firstDoc && firstDoc !== 'Doctor not assigned') {
             setAssignedDoctor(firstDoc);
-            if (data[0].doctor_id) setAssignedDoctorId(data[0].doctor_id);
+            if (primaryPlan.doctor_id) setAssignedDoctorId(primaryPlan.doctor_id);
           }
-          const dbItems = [];
-          data.forEach(p => {
-            (p.items || []).forEach(it => {
-              dbItems.push({
+          const rawItems = primaryPlan.items || [];
+          const dedupedItems = [];
+          const seen = new Set();
+          rawItems.forEach(it => {
+            const k = `${it.tooth_number || it.tooth || ''}_${(it.procedure_name || it.procedure || '').toLowerCase().trim()}`;
+            if (!seen.has(k)) {
+              seen.add(k);
+              dedupedItems.push({
                 id: it.id,
                 tooth: it.tooth_number || it.tooth,
                 diagnosis: it.diagnosis,
@@ -109,22 +175,14 @@ const PageContent = () => {
                 finalAmount: it.finalAmount || it.final_cost || '',
                 visits: it.visits || it.estimated_visits || 1,
                 status: it.status || 'Planned',
-                doctor: it.doctor || it.doctor_name || p.doctor_name || p.doctor || '',
+                doctor: it.doctor || it.doctor_name || primaryPlan.doctor_name || primaryPlan.doctor || '',
                 notes: it.notes || '',
                 description: it.description || ''
               });
-            });
+            }
           });
-          if (dbItems.length > 0) {
-            setPlans(prev => {
-              const merged = [...dbItems];
-              prev.forEach(p => {
-                if (!merged.find(m => String(m.id) === String(p.id) || (m.tooth === p.tooth && m.procedure === p.procedure))) {
-                  merged.push(p);
-                }
-              });
-              return merged;
-            });
+          if (dedupedItems.length > 0) {
+            setPlans(dedupedItems);
           }
         }
       })
@@ -186,7 +244,7 @@ const PageContent = () => {
   });
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
-  const [isInvoicePreviewOpen, setIsInvoicePreviewOpen] = useState(false);
+  const [isEstimateModalOpen, setIsEstimateModalOpen] = useState(false);
 
   const handleFormChange = (field, value) => {
       setDrawerForm(prev => {
@@ -323,7 +381,7 @@ const PageContent = () => {
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainArea}>
-        <TopHeader hidePatientHeader={true} />
+        <TopHeader hidePatientHeader={true} doctorName={assignedDoctor} />
         
         {/* Stepper */}
         <div className={styles.stepperContainer} style={{ padding: '1rem 2rem', borderBottom: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'center' }}>
@@ -345,17 +403,208 @@ const PageContent = () => {
         <div className={styles.scrollContainer}>
 
           <div className={styles.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 className={styles.headerTitle}>Treatment Plans</h2>
-              <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                <h2 className={styles.headerTitle}>Treatment Plans</h2>
+                <div className={styles.viewSwitcher}>
+                  <button 
+                    type="button"
+                    className={`${styles.switcherBtn} ${viewMode === 'table' ? styles.switcherBtnActive : ''}`}
+                    onClick={() => handleViewModeChange('table')}
+                    title="Compact Clinical Table View"
+                  >
+                    <LayoutList size={15} />
+                    <span>Compact Table</span>
+                  </button>
+                  <button 
+                    type="button"
+                    className={`${styles.switcherBtn} ${viewMode === 'kanban' ? styles.switcherBtnActive : ''}`}
+                    onClick={() => handleViewModeChange('kanban')}
+                    title="Kanban Board View"
+                  >
+                    <LayoutGrid size={15} />
+                    <span>Kanban Cards</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button className={styles.btnSecondary}>Save Draft</button>
                 <button className={styles.btnSecondary} onClick={() => navigate(-1)}>Back to Diagnosis</button>
                 <button className={styles.btnPrimary} onClick={() => openDrawer()}>+ Add Treatment</button>
-                <button className={styles.btnPrimary} onClick={() => setIsInvoicePreviewOpen(true)} style={{backgroundColor: '#10b981'}}>Continue</button>
+                <button className={styles.btnPrimary} onClick={() => setIsEstimateModalOpen(true)} style={{backgroundColor: '#10b981'}}>Continue</button>
               </div>
             </div>
 
-            <div className={styles.kanbanBoard}>
+            {viewMode === 'table' ? (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className={styles.tableToolbar}>
+                  <div className={styles.filterTabs}>
+                    <button 
+                      type="button" 
+                      className={`${styles.filterTab} ${tableFilter === 'All' ? styles.filterTabActive : ''}`}
+                      onClick={() => setTableFilter('All')}
+                    >
+                      All <span className={styles.filterTabCount}>{planCounts.all}</span>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`${styles.filterTab} ${tableFilter === 'Planned' ? styles.filterTabActive : ''}`}
+                      onClick={() => setTableFilter('Planned')}
+                    >
+                      Treatment Plan <span className={styles.filterTabCount}>{planCounts.planned}</span>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`${styles.filterTab} ${tableFilter === 'In Progress' ? styles.filterTabActive : ''}`}
+                      onClick={() => setTableFilter('In Progress')}
+                    >
+                      In Progress <span className={styles.filterTabCount}>{planCounts.inProgress}</span>
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`${styles.filterTab} ${tableFilter === 'Completed' ? styles.filterTabActive : ''}`}
+                      onClick={() => setTableFilter('Completed')}
+                    >
+                      Completed <span className={styles.filterTabCount}>{planCounts.completed}</span>
+                    </button>
+                  </div>
+
+                  <div className={styles.summaryMeta}>
+                    <span>Procedures: <strong>{filteredPlans.length}</strong></span>
+                    <span>Total Estimate: <strong>₹{totalEstimatedCost.toFixed(2)}</strong></span>
+                  </div>
+                </div>
+
+                <div className={styles.tableContainer}>
+                  <table className={styles.clinicalTable}>
+                    <thead>
+                      <tr>
+                        <th className={styles.clinicalTh} style={{ width: '40px', textAlign: 'center' }}>#</th>
+                        <th className={styles.clinicalTh} style={{ width: '110px' }}>Tooth</th>
+                        <th className={styles.clinicalTh}>Treatment / Procedure</th>
+                        <th className={styles.clinicalTh}>Diagnosis</th>
+                        <th className={styles.clinicalTh} style={{ width: '60px', textAlign: 'center' }}>Qty</th>
+                        <th className={styles.clinicalTh} style={{ width: '110px' }}>Rate (₹)</th>
+                        <th className={styles.clinicalTh} style={{ width: '110px' }}>Total (₹)</th>
+                        <th className={styles.clinicalTh}>Doctor</th>
+                        <th className={styles.clinicalTh} style={{ width: '135px' }}>Status</th>
+                        <th className={styles.clinicalTh} style={{ width: '145px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPlans.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#94a3b8' }}>
+                            No treatments found for current filter. Click <strong>+ Add Treatment</strong> to add one.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredPlans.map((p, idx) => (
+                          <tr key={p.id} className={styles.clinicalTr}>
+                            <td className={styles.clinicalTd} style={{ textAlign: 'center', color: '#94a3b8', fontWeight: '500' }}>
+                              {idx + 1}
+                            </td>
+                            <td className={styles.clinicalTd}>
+                              <div className={styles.toothCell}>
+                                <img 
+                                  src={`/${parseInt(p.tooth) >= 11 ? 'molar' : 'incisor'}.png`} 
+                                  alt="tooth" 
+                                  className={styles.toothCellImg} 
+                                />
+                                <span>#{p.tooth}</span>
+                              </div>
+                            </td>
+                            <td className={styles.clinicalTd}>
+                              <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                                {p.procedure || '-'}
+                                {p.surface && p.surface !== 'All' && (
+                                  <span className={styles.surfaceBadge}>{p.surface}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className={styles.clinicalTd} style={{ color: '#475569' }}>
+                              {p.diagnosis || '-'}
+                            </td>
+                            <td className={styles.clinicalTd} style={{ textAlign: 'center', fontWeight: '500' }}>
+                              1
+                            </td>
+                            <td className={styles.clinicalTd}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                <span>₹{p.cost || '400'}</span>
+                                {p.finalAmount && p.finalAmount !== p.cost && (
+                                  <span className={styles.customPriceTag}>Custom</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className={styles.clinicalTd} style={{ fontWeight: '600', color: '#0f172a' }}>
+                              ₹{p.finalAmount || p.cost || '400'}
+                            </td>
+                            <td className={styles.clinicalTd} style={{ color: '#475569', fontSize: '0.825rem' }}>
+                              {p.doctor || assignedDoctor || 'Doctor not assigned'}
+                            </td>
+                            <td className={styles.clinicalTd}>
+                              <select 
+                                value={getNormalizedStatus(p.status)} 
+                                onChange={(e) => updateStatus(p.id, e.target.value)} 
+                                className={`${styles.statusSelect} ${
+                                  getNormalizedStatus(p.status) === 'Completed' 
+                                    ? styles.statusCompleted 
+                                    : getNormalizedStatus(p.status) === 'In Progress' 
+                                      ? styles.statusInProgress 
+                                      : styles.statusPlanned
+                                }`}
+                              >
+                                <option value="Planned">Planned</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                            </td>
+                            <td className={styles.clinicalTd} style={{ textAlign: 'center' }}>
+                              <div className={styles.tableActions}>
+                                <button 
+                                  type="button" 
+                                  className={styles.actionIconBtn} 
+                                  onClick={() => openDrawer(p)} 
+                                  title="Edit procedure and custom price"
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button 
+                                  type="button" 
+                                  className={styles.actionIconBtn} 
+                                  onClick={() => setIsNotesModalOpen(true)} 
+                                  title="Consultation Notes"
+                                >
+                                  <FileText size={13} />
+                                </button>
+                                <button 
+                                  type="button" 
+                                  className={styles.actionIconBtn} 
+                                  onClick={() => setIsPrescriptionModalOpen(true)} 
+                                  title="Medications"
+                                >
+                                  <Pill size={13} />
+                                </button>
+                                <button 
+                                  type="button" 
+                                  className={`${styles.actionIconBtn} ${styles.actionIconBtnDanger}`} 
+                                  onClick={() => removePlan(p.id)} 
+                                  title="Delete treatment"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.kanbanBoard}>
               {columns.map(col => (
                 <div key={col.id} className={styles.kanbanColumn}>
                   <div className={styles.kanbanColumnHeader} style={{ backgroundColor: col.color, color: col.textColor }}>
@@ -447,10 +696,11 @@ const PageContent = () => {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
           
-          <MedicationsSection />
+          <MedicationsSection patientId={caseId} />
           <InvestigationsSection patient={patient} />
         </div>
       </div>
@@ -597,22 +847,25 @@ const PageContent = () => {
           />
       )}
       
-      {isInvoicePreviewOpen && (
-          <InvoicePreviewModal 
+      {isEstimateModalOpen && (
+          <EstimateModal 
+              patientId={caseId && caseId !== 'new' ? caseId : (patient?.id || 'NEW')}
+              patientName={location.state?.patientName || patient?.name || 'Walk-in Patient'}
+              doctorId={assignedDoctorId || location.state?.doctorId}
+              doctorName={assignedDoctor}
               plans={plans}
-              medicines={prescriptions}
-              patientName={patient?.name || 'Walk-in Patient'}
-              onClose={() => setIsInvoicePreviewOpen(false)}
+              treatmentPlanId={planId}
+              onClose={() => setIsEstimateModalOpen(false)}
           />
       )}
     </div>
   );
 };
 
-const TreatmentPlansPage = () => {
+const TreatmentPlansPage = ({ defaultFilter }) => {
   return (
     <ConsultationProvider>
-      <PageContent />
+      <PageContent defaultFilter={defaultFilter} />
     </ConsultationProvider>
   );
 };

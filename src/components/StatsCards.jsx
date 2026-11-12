@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './StatsCards.module.css'
-
-const API_BASE = 'http://127.0.0.1:8000/api'
 
 function useCountUp(target, duration = 1400) {
   const ref = useRef(null)
@@ -107,11 +106,13 @@ export default function StatsCards({ onNavigate }) {
   const now = new Date()
 
   const fetchStats = () => {
-    const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-    fetch('http://127.0.0.1:8000/api/appointments/stats/', {
-      headers: { 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
+    fetch(`${API_BASE}/appointments/stats/`, {
+      headers: getHeaders()
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => setStats(data))
       .catch(console.error)
   }
@@ -119,10 +120,9 @@ export default function StatsCards({ onNavigate }) {
   const fetchMissedList = async () => {
     setMissedLoading(true)
     try {
-      const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
       const today = new Date().toISOString().split('T')[0]
       const res = await fetch(`${API_BASE}/appointments/all/?date=${today}`, {
-        headers: { 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
+        headers: getHeaders()
       })
       const data = await res.json()
       const missed = (Array.isArray(data) ? data : []).filter(a => a.status === 'Missed')
@@ -138,11 +138,13 @@ export default function StatsCards({ onNavigate }) {
   const fetchFinance = () => {
     const m = now.getMonth() + 1
     const y = now.getFullYear()
-    const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
-    fetch(`http://127.0.0.1:8000/api/finance/dashboard/?filter_type=monthly&month=${m}&year=${y}`, {
-      headers: { 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
+    fetch(`${API_BASE}/finance/dashboard/?filter_type=monthly&month=${m}&year=${y}`, {
+      headers: getHeaders()
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => {
         const income = data?.monthlyIncome?.total || 0
         const expenseObj = data?.expenses || {}
@@ -314,7 +316,8 @@ export default function StatsCards({ onNavigate }) {
                   <div style={{ color: '#64748b', marginTop: 6, fontSize: 13 }}>All patients have been attended to.</div>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+                <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'transparent' }}>
                       {['#', 'Patient', 'Phone', 'Time', 'Doctor', 'Actions'].map(h => (
@@ -358,6 +361,7 @@ export default function StatsCards({ onNavigate }) {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
             {/* Footer */}

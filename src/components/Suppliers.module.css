@@ -66,10 +66,29 @@
 }
 
 .modal {
-    background: rgba(255, 255, 255, 0.03);
+    background: #ffffff;
     padding: 32px;
     border-radius: 20px;
     width: 400px;
+    max-width: 95vw;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 14px 10px;
+    }
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .addBtn, .refreshBtn {
+        width: 100%;
+        text-align: center;
+    }
+    .modal {
+        padding: 20px 16px;
+    }
 }
 
 .modal form {

@@ -102,14 +102,18 @@
 }
 
 /* ── List ── */
-.patientList { background: #ffffff !important;
+.patientList {
+  background: #ffffff !important;
   border-radius: 20px;
   border: 1px solid var(--border-light);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
   box-shadow: var(--shadow-premium);
 }
 
 .listHeader {
+  min-width: 780px;
   display: grid;
   grid-template-columns: 50px 1fr 100px 140px 140px 90px 240px;
   padding: 16px 24px;
@@ -123,6 +127,7 @@
 }
 
 .patientRow {
+  min-width: 780px;
   display: grid;
   grid-template-columns: 50px 1fr 100px 140px 140px 90px 240px;
   align-items: center;
@@ -263,5 +268,35 @@
   .listHeader > div:nth-child(5),
   .patientRow > div:nth-child(5) {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .summaryRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .searchBox {
+    max-width: 100%;
+    width: 100%;
+  }
+  .listContainer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .listHeader,
+  .patientRow {
+    min-width: 620px;
   }
 }

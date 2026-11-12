@@ -675,3 +675,26 @@
     height: 400px;
   }
 }
+
+@media (max-width: 600px) {
+  .container {
+    padding: 12px 8px;
+    gap: 16px;
+  }
+  .selectionPanel {
+    flex: none;
+    width: 100%;
+    height: 350px;
+  }
+  .composerHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .tabSwitcher {
+    width: 100%;
+  }
+  .tabSwitcher button {
+    flex: 1;
+  }
+}

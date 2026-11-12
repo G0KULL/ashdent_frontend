@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE, getHeaders } from '../utils/api'
+import EstimateModal from './EstimateModal'
 import styles from "./SearchPatient.module.css";
 
 const printPdf = async (url) => {
@@ -45,6 +46,32 @@ const printPdf = async (url) => {
 
 export default function PatientProfileInvoice({ viewPatient, profile, refreshProfile }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState('invoices'); // 'invoices' | 'estimates'
+  const [estimates, setEstimates] = useState([]);
+  const [loadingEstimates, setLoadingEstimates] = useState(false);
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+
+  const fetchEstimates = async () => {
+    if (!viewPatient?.id) return;
+    setLoadingEstimates(true);
+    try {
+      const res = await fetch(`${API_BASE}/estimates/?patient_id=${viewPatient.id}`, { headers: getHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setEstimates(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch estimates:', e);
+    } finally {
+      setLoadingEstimates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (viewPatient?.id) {
+      fetchEstimates();
+    }
+  }, [viewPatient?.id]);
   
   // Master lists
   const [doctors, setDoctors] = useState([]);
@@ -273,117 +300,303 @@ export default function PatientProfileInvoice({ viewPatient, profile, refreshPro
     <div className={styles.treatmentsTabBody} style={{ padding: "24px 32px 32px 32px" }}>
       {!showAdd ? (
         <>
-          <div className={styles.treatmentActionsRow}>
-            <h3 style={{ margin: 0, fontSize: 16, color: "var(--slate-900)" }}>
-              Invoices
-            </h3>
-            <button
-              onClick={() => {
-                setShowAdd(true);
-                setInvoiceItems([]);
-                setPaidAmount("");
-              }}
-              style={{
-                background: "#3b82f6",
-                color: "white",
-                border: "none",
-                padding: "8px 16px",
-                borderRadius: 6,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              Add New Invoice
-            </button>
+          {/* Subtabs Navigation */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('invoices')}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 20,
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  background: activeSubTab === 'invoices' ? '#4f46e5' : '#f1f5f9',
+                  color: activeSubTab === 'invoices' ? '#fff' : '#64748b',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🧾 Tax Invoices ({profile?.bills?.length || 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('estimates')}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 20,
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  background: activeSubTab === 'estimates' ? '#4f46e5' : '#f1f5f9',
+                  color: activeSubTab === 'estimates' ? '#fff' : '#64748b',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📋 Treatment Estimates ({estimates.length})
+              </button>
+            </div>
+
+            {activeSubTab === 'invoices' ? (
+              <button
+                onClick={() => {
+                  setShowAdd(true);
+                  setInvoiceItems([]);
+                  setPaidAmount("");
+                }}
+                style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                }}
+              >
+                + Add Direct Invoice
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowEstimateModal(true)}
+                style={{
+                  background: '#059669',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                }}
+              >
+                + New Treatment Estimate
+              </button>
+            )}
           </div>
-          <div
-            style={{
-              background: "rgba(255, 255, 255, 0.03)",
-              borderRadius: 8,
-              border: "1px solid var(--border-light)",
-              padding: 16,
-            }}
-          >
-            <table className={styles.treatmentListTable}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Invoice ID</th>
-                  <th>Items</th>
-                  <th>Subtotal</th>
-                  <th>Paid</th>
-                  <th>Balance</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!profile?.bills || profile.bills.length === 0 ? (
+
+          {activeSubTab === 'invoices' ? (
+            <div
+              style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}
+            >
+              <table className={styles.treatmentListTable}>
+                <thead>
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>
-                      No invoices found.
-                    </td>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Items</th>
+                    <th>Subtotal</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
-                ) : (
-                  profile.bills
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 3)
-                    .map((b) => (
-                    <tr key={b.id}>
-                      <td style={{ whiteSpace: "nowrap" }}>
-                        {new Date(b.created_at).toLocaleDateString()}
-                      </td>
-                      <td>INV-{String(b.id).toUpperCase().slice(0, 8)}</td>
-                      <td>
-                        {b.items?.map((it, idx) => (
-                          <div key={it.id || idx} style={{ fontSize: 13, marginBottom: 4 }}>
-                            <strong>{it.treatment_name || it.name}</strong> x {it.qty || it.quantity}
-                          </div>
-                        ))}
-                      </td>
-                      <td>₹{parseFloat(b.total_amount || 0).toFixed(2)}</td>
-                      <td>₹{parseFloat(b.paid_amount || 0).toFixed(2)}</td>
-                      <td style={{ color: parseFloat(b.balance_amount || 0) > 0 ? "#ef4444" : "#10b981", fontWeight: 700 }}>
-                        ₹{parseFloat(b.balance_amount || 0).toFixed(2)}
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            padding: "2px 8px",
-                            borderRadius: 12,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            background: b.status === "Paid" ? "#dcfce7" : b.status === "Partial" ? "#fef9c3" : "#fee2e2",
-                            color: b.status === "Paid" ? "#15803d" : b.status === "Partial" ? "#a16207" : "#b91c1c",
-                          }}
-                        >
-                          {b.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => printPdf(`${API_BASE}/billing/${b.id}/pdf/`)}
-                          style={{
-                            border: "none",
-                            background: "#eef2ff",
-                            color: "#4f46e5",
-                            borderRadius: 6,
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            padding: "4px 10px",
-                            fontSize: 11,
-                          }}
-                        >
-                          Print
-                        </button>
+                </thead>
+                <tbody>
+                  {!profile?.bills || profile.bills.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>
+                        No invoices found.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    profile.bills
+                      .slice()
+                      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                      .map((b) => (
+                      <tr key={b.id}>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {new Date(b.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#4f46e5' }}>
+                          {b.invoice_number || `INV-${String(b.id).toUpperCase().slice(0, 8)}`}
+                        </td>
+                        <td>
+                          {b.items?.map((it, idx) => (
+                            <div key={it.id || idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                              <strong>{it.treatment_name || it.name}</strong> x {it.qty || it.quantity}
+                            </div>
+                          ))}
+                        </td>
+                        <td>₹{parseFloat(b.total_amount || 0).toFixed(2)}</td>
+                        <td>₹{parseFloat(b.paid_amount || 0).toFixed(2)}</td>
+                        <td style={{ color: parseFloat(b.balance_amount || 0) > 0 ? "#ef4444" : "#10b981", fontWeight: 700 }}>
+                          ₹{parseFloat(b.balance_amount || 0).toFixed(2)}
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 12,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: b.status === "Paid" ? "#dcfce7" : b.status === "Partial" ? "#fef9c3" : "#fee2e2",
+                              color: b.status === "Paid" ? "#15803d" : b.status === "Partial" ? "#a16207" : "#b91c1c",
+                            }}
+                          >
+                            {b.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              onClick={() => printPdf(`${API_BASE}/billing/${b.id}/pdf/`)}
+                              style={{
+                                border: "none",
+                                background: "#eef2ff",
+                                color: "#4f46e5",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                padding: "4px 10px",
+                                fontSize: 11,
+                              }}
+                            >
+                              Invoice PDF
+                            </button>
+                            {parseFloat(b.paid_amount || 0) > 0 && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const r = await fetch(`${API_BASE}/billing/${b.id}/payments/`, { headers: getHeaders() })
+                                    const payments = await r.json()
+                                    if (Array.isArray(payments) && payments.length > 0) {
+                                      printPdf(`${API_BASE}/billing/receipts/${payments[0].id}/pdf/`)
+                                    } else {
+                                      printPdf(`${API_BASE}/billing/${b.id}/pdf/`)
+                                    }
+                                  } catch (e) {
+                                    printPdf(`${API_BASE}/billing/${b.id}/pdf/`)
+                                  }
+                                }}
+                                style={{
+                                  border: "none",
+                                  background: "#ecfdf5",
+                                  color: "#059669",
+                                  borderRadius: 6,
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                  padding: "4px 8px",
+                                  fontSize: 11,
+                                }}
+                              >
+                                Receipt
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div
+              style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 8, border: '1px solid var(--border-light)', padding: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}
+            >
+              {loadingEstimates ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#64748b' }}>Loading estimates...</div>
+              ) : estimates.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                  No treatment estimates found for this patient. Click "+ New Treatment Estimate" to generate one.
+                </div>
+              ) : (
+                <table className={styles.treatmentListTable}>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Estimate #</th>
+                      <th>Version</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estimates.map((est) => (
+                      <tr key={est.id}>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {new Date(est.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#059669' }}>
+                          {est.estimate_number}
+                        </td>
+                        <td>
+                          <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+                            v{est.version}
+                          </span>
+                        </td>
+                        <td>
+                          {est.items?.map((it, idx) => (
+                            <div key={idx} style={{ fontSize: 12, marginBottom: 2 }}>
+                              <strong>{it.procedure_name}</strong> {it.tooth_number ? `(Tooth ${it.tooth_number})` : ''} x {it.quantity}
+                              {it.billed_quantity > 0 && <span style={{ color: '#059669', marginLeft: 4 }}>({it.billed_quantity} billed)</span>}
+                            </div>
+                          ))}
+                        </td>
+                        <td style={{ fontWeight: 700, fontSize: 14 }}>
+                          ₹{parseFloat(est.total_amount || 0).toFixed(2)}
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 12,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: est.status === "Accepted" ? "#dcfce7" : est.status === "Billed" ? "#e0e7ff" : est.status === "Partially Billed" ? "#fef9c3" : est.status === "Rejected" ? "#fee2e2" : "#f1f5f9",
+                              color: est.status === "Accepted" ? "#15803d" : est.status === "Billed" ? "#4338ca" : est.status === "Partially Billed" ? "#a16207" : est.status === "Rejected" ? "#b91c1c" : "#475569",
+                            }}
+                          >
+                            {est.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              onClick={() => setShowEstimateModal(true)}
+                              style={{
+                                border: "none",
+                                background: "#f0fdf4",
+                                color: "#166534",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                padding: "4px 10px",
+                                fontSize: 11,
+                              }}
+                            >
+                              Manage / Convert
+                            </button>
+                            <button
+                              onClick={() => printPdf(`${API_BASE}/estimates/${est.id}/pdf/`)}
+                              style={{
+                                border: "none",
+                                background: "#eef2ff",
+                                color: "#4f46e5",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                padding: "4px 10px",
+                                fontSize: 11,
+                              }}
+                            >
+                              Estimate PDF
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <div
@@ -895,6 +1108,18 @@ export default function PatientProfileInvoice({ viewPatient, profile, refreshPro
             </div>
           </div>
         </div>
+      )}
+      {showEstimateModal && (
+        <EstimateModal
+          patientId={viewPatient?.id}
+          patientName={viewPatient?.name}
+          doctorId={selectedDoctorId}
+          onClose={() => {
+            setShowEstimateModal(false);
+            fetchEstimates();
+            refreshProfile();
+          }}
+        />
       )}
     </div>
   );

@@ -21,6 +21,11 @@ export default function LoginPage({ onLogin }) {
       })
       const data = await res.json()
       if (res.ok) {
+        if (data.access) {
+          localStorage.setItem("ashdent_access_token", data.access);
+          localStorage.setItem("token", data.access);
+        }
+        if (data.refresh) localStorage.setItem("ashdent_refresh_token", data.refresh);
         onLogin(data)
       } else {
         setError(data.error || data.detail || 'Invalid username or password')

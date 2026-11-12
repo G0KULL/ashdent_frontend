@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useBranch } from "../context/BranchContext";
+import { API_BASE, getHeaders } from "../utils/api";
 import styles from "./Sidebar.module.css";
 
 const NAV_ITEMS = [
@@ -323,30 +325,121 @@ const NAV_ITEMS_FINANCE = [
       </svg>
     ),
   },
+  {
+    id: "company-management",
+    label: "Company Management",
+    roles: ["Super Admin"],
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar({
   activeNav,
   setActiveNav,
-  isOpen,
+  isOpen = true,
   userRole,
   onLogout,
   currentUser,
   navItems,
+  onClose,
 }) {
   const [pendingProposalCount, setPendingProposalCount] = useState(0);
+  const { companies, activeCompany, switchCompany } = useBranch();
+  const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+  const [companySearch, setCompanySearch] = useState("");
+  const companyRef = useRef(null);
+
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== "undefined" ? window.innerWidth <= 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // On mobile screen, an open drawer must ALWAYS render fully expanded with icons & complete text labels.
+  // On desktop screens, it honors the isOpen toggle (expanded vs collapsed icons-only).
+  const showExpanded = isMobile ? true : isOpen;
+
+  // Close drawer on Escape key (mobile only)
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, isOpen, onClose]);
+
+  // Lock background page scroll when mobile drawer is open
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isMobile, isOpen]);
+
+  const handleItemClick = (itemId) => {
+    if (setActiveNav) {
+      setActiveNav(itemId);
+    }
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
+  const isSuperAdmin = Boolean(
+    currentUser?.is_superuser === true ||
+    currentUser?.role === "Super Admin" ||
+    userRole === "Super Admin"
+  );
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (companyRef.current && !companyRef.current.contains(event.target)) {
+        setCompanyDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCompanies = (companies || []).filter(c => 
+    c.is_active !== false &&
+    ((c.name && c.name.toLowerCase().includes(companySearch.toLowerCase())) ||
+     (c.code && c.code.toLowerCase().includes(companySearch.toLowerCase())))
+  );
 
   useEffect(() => {
     if (userRole === "Admin") {
-      const u = JSON.parse(
-        localStorage.getItem("ashdent_user") ||
-          localStorage.getItem("doctosmart_user") ||
-          "{}",
-      );
       fetch(
-        "http://127.0.0.1:8000/api/doctor-schedule-proposals/?status=PENDING_APPROVAL",
+        `${API_BASE}/doctor-schedule-proposals/?status=PENDING_APPROVAL`,
         {
-          headers: { "X-User-Id": u.id || "", "X-Username": u.username || "" },
+          headers: getHeaders(),
         },
       )
         .then((r) => r.json())
@@ -364,9 +457,13 @@ export default function Sidebar({
   };
 
   const isAllowed = (item) => {
-    if (userRole === "Admin") {
+    if (item.id === "company-management") {
+      return isSuperAdmin;
+    }
+
+    if (userRole === "Admin" || isSuperAdmin) {
       if (!item.roles) return true;
-      return item.roles.some((r) => r.toLowerCase() === "admin");
+      return item.roles.some((r) => r.toLowerCase() === "admin" || (r.toLowerCase() === "super admin" && isSuperAdmin));
     }
 
     if (
@@ -436,16 +533,26 @@ export default function Sidebar({
             style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         </div>
-        {isOpen && (
+        {showExpanded && (
           <div className={styles.brandText}>
             <span className={styles.brandName}>AshDent</span>
             <span className={styles.brandSub}>HMS</span>
           </div>
         )}
+        {isMobile && onClose && (
+          <button
+            type="button"
+            className={styles.mobileCloseBtn}
+            onClick={onClose}
+            aria-label="Close navigation"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Profile */}
-      {isOpen && (
+      {showExpanded && (
         <div className={styles.profile}>
           <div className={styles.avatarWrap}>
             <div className={styles.avatar}>
@@ -470,9 +577,182 @@ export default function Sidebar({
                 color: "rgba(255,255,255,0.9)",
               }}
             >
-              {userRole}
+              {isSuperAdmin ? "Super Admin" : userRole}
             </span>
           </p>
+        </div>
+      )}
+
+      {/* Super Admin Company Selection (Immediately above Home) */}
+      {isSuperAdmin && (
+        <div className={styles.companySelectorWrap} ref={companyRef}>
+          {showExpanded ? (
+            <div className={styles.companyCard}>
+              <div className={styles.companyCardHeader}>
+                <span className={styles.companyCardLabel}>Active Company</span>
+                <button
+                  type="button"
+                  className={styles.companyManageMiniBtn}
+                  onClick={() => handleItemClick("company-management")}
+                  title="Manage Companies"
+                >
+                  ⚙️
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className={`${styles.companyTrigger} ${!activeCompany ? styles.companyTriggerEmpty : ''}`}
+                onClick={() => setCompanyDropdownOpen(prev => !prev)}
+                title="Switch Active Company"
+              >
+                <div className={styles.companyTriggerContent}>
+                  <span className={styles.companyIcon}>🏢</span>
+                  <div className={styles.companyTextWrap}>
+                    <span className={styles.companyActiveName}>
+                      {activeCompany?.name || "Select Company"}
+                    </span>
+                    {activeCompany?.code && (
+                      <span className={styles.companyActiveCode}>
+                        [{activeCompany.code}]
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <svg
+                  className={`${styles.companyChevron} ${companyDropdownOpen ? styles.companyChevronOpen : ''}`}
+                  width="14"
+                  height="14"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 7.5L10 12.5L15 7.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {companyDropdownOpen && (
+                <div className={styles.companyDropdown}>
+                  <div className={styles.companyDropdownSearch}>
+                    <input
+                      type="text"
+                      placeholder="Search company..."
+                      value={companySearch}
+                      onChange={(e) => setCompanySearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+                  <div className={styles.companyDropdownList}>
+                    {filteredCompanies.length === 0 ? (
+                      <div className={styles.companyDropdownEmpty}>No active companies</div>
+                    ) : (
+                      filteredCompanies.map((c) => {
+                        const isSelected = activeCompany && String(activeCompany.id) === String(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`${styles.companyDropdownItem} ${isSelected ? styles.companyDropdownItemActive : ''}`}
+                            onClick={() => {
+                              switchCompany(c);
+                              setCompanyDropdownOpen(false);
+                            }}
+                          >
+                            <div className={styles.companyDropdownItemText}>
+                              <span className={styles.companyDropdownItemName}>{c.name}</span>
+                              <span className={styles.companyDropdownItemCode}>
+                                {c.code} {c.city ? `• ${c.city}` : ''}
+                              </span>
+                            </div>
+                            {isSelected && <span className={styles.companyCheckmark}>✓</span>}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className={styles.companyDropdownFooter}>
+                    <button
+                      type="button"
+                      className={styles.companyManageLink}
+                      onClick={() => {
+                        setActiveNav("company-management");
+                        setCompanyDropdownOpen(false);
+                      }}
+                    >
+                      + Manage Companies
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Collapsed Sidebar trigger */
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className={styles.companyCollapsedTrigger}
+                onClick={() => setCompanyDropdownOpen(prev => !prev)}
+                title={`Active Company: ${activeCompany?.name || 'None (Click to switch)'}`}
+              >
+                <span style={{ fontSize: "18px" }}>🏢</span>
+              </button>
+
+              {companyDropdownOpen && (
+                <div className={styles.companyDropdown} style={{ left: "55px", top: 0, width: "230px" }}>
+                  <div className={styles.companyDropdownSearch}>
+                    <input
+                      type="text"
+                      placeholder="Search company..."
+                      value={companySearch}
+                      onChange={(e) => setCompanySearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+                  <div className={styles.companyDropdownList}>
+                    {filteredCompanies.length === 0 ? (
+                      <div className={styles.companyDropdownEmpty}>No active companies</div>
+                    ) : (
+                      filteredCompanies.map((c) => {
+                        const isSelected = activeCompany && String(activeCompany.id) === String(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`${styles.companyDropdownItem} ${isSelected ? styles.companyDropdownItemActive : ''}`}
+                            onClick={() => {
+                              switchCompany(c);
+                              setCompanyDropdownOpen(false);
+                            }}
+                          >
+                            <div className={styles.companyDropdownItemText}>
+                              <span className={styles.companyDropdownItemName}>{c.name}</span>
+                              <span className={styles.companyDropdownItemCode}>{c.code}</span>
+                            </div>
+                            {isSelected && <span className={styles.companyCheckmark}>✓</span>}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className={styles.companyDropdownFooter}>
+                    <button
+                      type="button"
+                      className={styles.companyManageLink}
+                      onClick={() => {
+                        handleItemClick("company-management");
+                        setCompanyDropdownOpen(false);
+                      }}
+                    >
+                      + Manage Companies
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -480,17 +760,17 @@ export default function Sidebar({
       {activeNav !== "dashboard" && (
         <div
           style={{
-            padding: isOpen ? "0 16px 16px" : "0 8px 16px",
+            padding: showExpanded ? "0 16px 16px" : "0 8px 16px",
             display: "flex",
             justifyContent: "center",
           }}
         >
           <button
-            onClick={() => setActiveNav("dashboard")}
+            onClick={() => handleItemClick("dashboard")}
             title="Back to Home"
             style={{
               width: "100%",
-              padding: isOpen ? "10px" : "10px 0",
+              padding: showExpanded ? "10px" : "10px 0",
               background:
                 "linear-gradient(135deg, rgba(219,39,119,0.2), rgba(168,85,247,0.2))",
               border: "1px solid rgba(219,39,119,0.4)",
@@ -523,7 +803,7 @@ export default function Sidebar({
                 fill="currentColor"
               />
             </svg>
-            {isOpen && <span>Back to Home</span>}
+            {showExpanded && <span>Back to Home</span>}
           </button>
         </div>
       )}
@@ -536,9 +816,9 @@ export default function Sidebar({
               <NavItem
                 key={item.id}
                 item={item}
-                active={activeNav === item.id}
-                onClick={() => setActiveNav(item.id)}
-                isOpen={isOpen}
+                active={activeNav === item.id || (item.id === 'follow-ups' && (activeNav === 'follow-ups' || activeNav === 'treatment-plans'))}
+                onClick={() => handleItemClick(item.id)}
+                isOpen={showExpanded}
               />
             ))
           ) : isPharmacist(userRole) ? (
@@ -547,9 +827,9 @@ export default function Sidebar({
                 <NavItem
                   key={item.id}
                   item={item}
-                  active={activeNav === item.id}
-                  onClick={() => setActiveNav(item.id)}
-                  isOpen={isOpen}
+                  active={activeNav === item.id || (item.id === 'follow-ups' && (activeNav === 'follow-ups' || activeNav === 'treatment-plans'))}
+                  onClick={() => handleItemClick(item.id)}
+                  isOpen={showExpanded}
                 />
               ))}
               {NAV_ITEMS_FINANCE.filter((item) =>
@@ -559,8 +839,8 @@ export default function Sidebar({
                   key={item.id}
                   item={item}
                   active={activeNav === item.id}
-                  onClick={() => setActiveNav(item.id)}
-                  isOpen={isOpen}
+                  onClick={() => handleItemClick(item.id)}
+                  isOpen={showExpanded}
                 />
               ))}
             </>
@@ -570,13 +850,13 @@ export default function Sidebar({
                 <NavItem
                   key={item.id}
                   item={item}
-                  active={activeNav === item.id}
-                  onClick={() => setActiveNav(item.id)}
-                  isOpen={isOpen}
+                  active={activeNav === item.id || (item.id === 'follow-ups' && (activeNav === 'follow-ups' || activeNav === 'treatment-plans'))}
+                  onClick={() => handleItemClick(item.id)}
+                  isOpen={showExpanded}
                 />
               ))}
 
-              {isOpen && coreItems.some(isAllowed) && (
+              {showExpanded && coreItems.some(isAllowed) && (
                 <li className={styles.divider}>Telemedicine</li>
               )}
 
@@ -585,12 +865,12 @@ export default function Sidebar({
                   key={item.id}
                   item={item}
                   active={activeNav === item.id}
-                  onClick={() => setActiveNav(item.id)}
-                  isOpen={isOpen}
+                  onClick={() => handleItemClick(item.id)}
+                  isOpen={showExpanded}
                 />
               ))}
 
-              {isOpen && NAV_ITEMS_FINANCE.some(isAllowed) && (
+              {showExpanded && NAV_ITEMS_FINANCE.some(isAllowed) && (
                 <li className={styles.divider}>Finance & Inventory</li>
               )}
 
@@ -599,8 +879,8 @@ export default function Sidebar({
                   key={item.id}
                   item={item}
                   active={activeNav === item.id}
-                  onClick={() => setActiveNav(item.id)}
-                  isOpen={isOpen}
+                  onClick={() => handleItemClick(item.id)}
+                  isOpen={showExpanded}
                 />
               ))}
             </>
@@ -609,7 +889,7 @@ export default function Sidebar({
       </nav>
 
       {/* Footer */}
-      {isOpen && (
+      {showExpanded && (
         <div className={styles.footer}>
           <button className={styles.logoutBtn} onClick={onLogout}>
             <svg width="15" height="15" viewBox="0 0 20 20" fill="none">

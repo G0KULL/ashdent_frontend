@@ -308,3 +308,13 @@
   color: #ef4444;
   background: #fee2e2;
 }
+
+@media (max-width: 600px) {
+  .dropdown {
+    max-width: 92vw;
+  }
+  .tag {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+}

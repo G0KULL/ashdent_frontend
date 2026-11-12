@@ -233,6 +233,7 @@
 }
 
 .apptTable {
+  min-width: 780px;
   width: 100%;
   border-collapse: collapse;
   text-align: left;
@@ -478,4 +479,50 @@
   font-size: 20px;
   color: #94a3b8;
   cursor: pointer;
+}
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .dateControlGroup {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .appointmentsContainer {
+    padding: 0;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bookBtn, .refreshBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  .filterBar {
+    padding: 12px 14px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterBar input, .filterBar select {
+    width: 100%;
+  }
+  .modalCard {
+    width: 95vw;
+    padding: 18px 14px;
+  }
 }

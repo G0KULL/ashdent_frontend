@@ -195,6 +195,9 @@
 
 .chartWrapper {
   height: 240px;
+  width: 100%;
+  min-width: 0;
+  min-height: 240px;
 }
 
 .emptyChart {

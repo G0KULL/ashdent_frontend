@@ -1,13 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import { confirmLogout } from '../utils/logout'
 
 export default function PharmacistLayout({ currentUser }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth > 768 : true))
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Automatically close mobile drawer when navigating to a new route
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname])
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', roles: ['Pharmacist', 'pharmicist', 'pharrmicist', 'Admin'] },
@@ -29,12 +36,19 @@ export default function PharmacistLayout({ currentUser }) {
       <Sidebar
         navItems={navItems}
         activeNav={activeNav}
-        setActiveNav={(path) => navigate(`/pharmacist/${path}`)}
+        setActiveNav={(path) => {
+          if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            setSidebarOpen(false)
+          }
+          navigate(`/pharmacist/${path}`)
+        }}
         isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         userRole={currentUser.role}
         currentUser={currentUser}
         onLogout={handleLogout}
       />
+      {sidebarOpen && <div className="sidebar-mobile-backdrop" onClick={() => setSidebarOpen(false)} />}
       <div className="main-wrapper">
         <Topbar
           onToggleSidebar={() => setSidebarOpen(o => !o)}

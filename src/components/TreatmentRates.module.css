@@ -71,15 +71,18 @@
 }
 
 .tableCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff !important;
   border-radius: 16px;
-  border: 1px solid var(--border-light);
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
 }
 
 .table {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
 }
 
@@ -145,4 +148,24 @@
 .updateBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 600px) {
+  .container {
+    padding: 14px 10px;
+    gap: 16px;
+  }
+  .addCard {
+    padding: 16px 14px;
+  }
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .row input:first-child,
+  .row input:nth-child(2),
+  .row button {
+    width: 100%;
+  }
 }

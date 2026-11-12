@@ -160,3 +160,9 @@
   box-shadow: none;
   cursor: not-allowed;
 }
+
+@media (max-width: 600px) {
+  .card {
+    padding: 16px 12px;
+  }
+}

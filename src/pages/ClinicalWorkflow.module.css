@@ -197,3 +197,30 @@
   justify-content: center;
   font-size: 2rem;
 }
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 768px) {
+  .workflowHeader {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .workflowActionsBar {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .workflowActionsBar {
+    flex-direction: column-reverse;
+  }
+  .btnPrimary, .btnSecondary {
+    width: 100%;
+    text-align: center;
+  }
+  .stepIndicator {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}

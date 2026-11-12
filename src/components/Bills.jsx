@@ -167,6 +167,23 @@ export default function Bills() {
   })
   const [doctors, setDoctors] = useState([])
   const [saving, setSaving] = useState(false)
+  const [unbilledItems, setUnbilledItems] = useState([])
+  const [loadingUnbilled, setLoadingUnbilled] = useState(false)
+
+  useEffect(() => {
+    if (billForm.patient?.id) {
+      setLoadingUnbilled(true)
+      fetch(`${API_BASE}/patients/${billForm.patient.id}/unbilled-treatments/`, { headers: getHeaders() })
+        .then(r => r.json())
+        .then(data => {
+          setUnbilledItems(data.unbilled_items || [])
+        })
+        .catch(console.error)
+        .finally(() => setLoadingUnbilled(false))
+    } else {
+      setUnbilledItems([])
+    }
+  }, [billForm.patient?.id])
 
   // Pay modal
   const [payModal, setPayModal] = useState(null) // { billId, balance, patientName }
@@ -244,7 +261,13 @@ export default function Bills() {
     : bills
 
   const handlePay = (bill) => {
-    setPayModal({ billId: bill.id, type: bill.type, balance: parseFloat(bill.balance_amount || 0), patientName: bill.patient_name })
+    setPayModal({
+      billId: bill.id,
+      type: bill.type,
+      balance: parseFloat(bill.balance_amount || 0),
+      patientName: bill.patient_name,
+      invoiceNumber: bill.invoice_number || `INV-${String(bill.id).slice(-6).toUpperCase()}`
+    })
     setPayAmount(parseFloat(bill.balance_amount || 0).toFixed(2))
     setPayMethod('Cash')
   }
@@ -253,17 +276,43 @@ export default function Bills() {
     if (!payModal || !payAmount || parseFloat(payAmount) <= 0) return
     setPaying(true)
     try {
-      const res = await fetch(`${API_BASE}/payment/pay/${payModal.billId}/`, {
+      let res = await fetch(`${API_BASE}/billing/${payModal.billId}/payments/`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ amount: payAmount, payment_method: payMethod, type: payModal.type }),
+        body: JSON.stringify({
+          amount: parseFloat(payAmount),
+          payment_method: payMethod,
+          notes: `Payment for ${payModal.invoiceNumber}`
+        }),
       })
+      let payData = null
       if (res.ok) {
+        payData = await res.json().catch(() => ({}))
+      } else {
+        // Fallback to legacy payment view
+        res = await fetch(`${API_BASE}/payment/pay/${payModal.billId}/`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ amount: payAmount, payment_method: payMethod, type: payModal.type }),
+        })
+      }
+      if (res.ok) {
+        const receiptId = payData?.payment_id
+        const rcpNo = payData?.receipt_number
         setPayModal(null)
         fetchBills()
+        if (receiptId) {
+          if (window.confirm(`Payment recorded successfully! Receipt #${rcpNo || receiptId} issued.\n\nWould you like to print the receipt now?`)) {
+            printPdf(`${API_BASE}/billing/receipts/${receiptId}/pdf/`)
+          }
+        }
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || 'Payment failed')
       }
     } catch (err) {
       console.error(err)
+      alert('Network error while recording payment')
     } finally {
       setPaying(false)
     }
@@ -426,6 +475,40 @@ export default function Bills() {
                   </div>
                 </div>
               )}
+
+              {billForm.patient && unbilledItems.length > 0 && (
+                <div style={{ marginTop: 12, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#1e40af', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>💡 UNBILLED TREATMENTS / ACCEPTED ESTIMATES ({unbilledItems.length} available):</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: '#3b82f6' }}>Click to auto-populate charge</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {unbilledItems.map((it, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          const amt = it.unbilled_amount || it.total_cost || it.unit_price || 0
+                          setBillForm(prev => ({
+                            ...prev,
+                            amount: String(amt),
+                            paid_amount: String(amt),
+                            selectedUnbilledItem: it
+                          }))
+                        }}
+                        style={{
+                          background: '#fff', border: '1px solid #93c5fd', borderRadius: 6, padding: '6px 10px',
+                          fontSize: 12, textAlign: 'left', cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center'
+                        }}
+                      >
+                        <strong style={{ color: '#1e3a8a' }}>{it.treatment_name}</strong>
+                        {it.tooth_number && <span style={{ color: '#64748b' }}>Tooth {it.tooth_number}</span>}
+                        <span style={{ color: '#059669', fontWeight: 700 }}>₹{it.unbilled_amount || it.total_cost}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -540,7 +623,7 @@ export default function Bills() {
         <table className={styles.table}>
           <thead>
             <tr style={{ backgroundColor: '#f8fafc', color: '#64748b' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>No.</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Invoice #</th>
               <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Date</th>
               <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>Patient Name</th>
               <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600 }}>Total(₹)</th>
@@ -566,7 +649,11 @@ export default function Bills() {
                 const discount = parseFloat(bill.discount_amount || bill.discount || 0)
                 return (
                   <tr key={bill.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>{index + 1}</td>
+                    <td style={{ padding: '16px', textAlign: 'left', fontSize: '13px' }}>
+  <span style={{ fontWeight: 700, color: '#4f46e5', fontFamily: 'monospace' }}>
+    {bill.invoice_number || `INV-${String(bill.id).slice(-6).toUpperCase()}`}
+  </span>
+</td>
                     <td style={{ padding: '16px', color: '#64748b', fontSize: '13px' }}>
                       <div style={{ fontWeight: 500, color: '#334155' }}>
                         {new Date(bill.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '-')}
@@ -633,11 +720,32 @@ export default function Bills() {
                         </button>
                         <button
                           onClick={() => printPdf(`${API_BASE}/billing/${bill.id}/pdf/`)}
-                          title="Print Invoice"
+                          title="Print Tax Invoice"
                           style={{ backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         </button>
+                        {parseFloat(bill.paid_amount || 0) > 0 && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const r = await fetch(`${API_BASE}/billing/${bill.id}/payments/`, { headers: getHeaders() })
+                                const payments = await r.json()
+                                if (Array.isArray(payments) && payments.length > 0) {
+                                  printPdf(`${API_BASE}/billing/receipts/${payments[0].id}/pdf/`)
+                                } else {
+                                  printPdf(`${API_BASE}/billing/${bill.id}/pdf/`)
+                                }
+                              } catch (e) {
+                                printPdf(`${API_BASE}/billing/${bill.id}/pdf/`)
+                              }
+                            }}
+                            title="Print Payment Receipt"
+                            style={{ backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 11 }}
+                          >
+                            🧾
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -671,7 +779,7 @@ export default function Bills() {
         }} onClick={() => setPayModal(null)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'rgba(255, 255, 255, 0.03)', borderRadius: 16, padding: '28px 32px',
-            width: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            width: 'min(400px, 92vw)', boxSizing: 'border-box', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
           }}>
             <h3 style={{ margin: '0 0 4px', fontSize: 16, color: 'var(--slate-900)' }}>💰 Collect Payment</h3>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748b' }}>

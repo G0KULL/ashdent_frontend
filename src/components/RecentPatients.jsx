@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './UpcomingAppointments.module.css'
 
 function getInitials(name) {
@@ -12,10 +13,11 @@ export default function RecentPatients({ onNavigate }) {
   const [patients, setPatients] = useState([])
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-    const headers = { 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
-    fetch('http://127.0.0.1:8000/api/patients/recent/', { headers })
-      .then(res => res.json())
+    fetch(`${API_BASE}/patients/recent/`, { headers: getHeaders() })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => setPatients(Array.isArray(data) ? data.slice(0, 3) : []))
       .catch(console.error)
   }, [])

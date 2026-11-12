@@ -252,7 +252,7 @@ export default function Reports() {
               </div>
             </div>
             
-            <div style={{ border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden', minHeight: '300px' }}>
+            <div style={{ border: '1px solid var(--border-light)', borderRadius: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', minHeight: '300px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ background: 'transparent', borderBottom: '1px solid var(--border-light)' }}>
                   <tr>
@@ -340,7 +340,7 @@ export default function Reports() {
                   <>
                     <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '8px 0' }} />
                     <h4 style={{ margin: '0 0 8px 0', color: 'var(--slate-800)', fontSize: '15px' }}>Extended Data</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'transparent', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'transparent', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                       {Object.entries(selectedRecord.full_data).map(([key, val]) => (
                         <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>{key.replace(/_/g, ' ')}</span>

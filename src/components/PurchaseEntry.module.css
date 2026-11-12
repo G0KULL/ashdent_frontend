@@ -281,7 +281,14 @@
   padding: 32px;
   border-radius: 20px;
   width: 400px;
+  max-width: 95vw;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 20px 16px;
+  }
 }
 
 .summaryCards {
@@ -480,4 +487,14 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: inline-block;
+}
+.tableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .footer {
+    grid-template-columns: 1fr !important;
+  }
 }

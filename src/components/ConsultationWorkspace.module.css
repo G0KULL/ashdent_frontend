@@ -493,3 +493,24 @@
   object-fit: cover;
   opacity: 0.8;
 }
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 900px) {
+  .gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .gallery {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .card {
+    padding: 16px 12px;
+  }
+}

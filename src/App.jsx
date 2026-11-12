@@ -53,6 +53,7 @@ import ExistingCaseSheet from './pages/ExistingCaseSheet'
 import OdontogramPage from './pages/OdontogramPage'
 import DiagnosisPage from './pages/DiagnosisPage'
 import ClinicalWorkflow from './pages/ClinicalWorkflow'
+import CompanyManagement from './pages/CompanyManagement'
 import './App.css'
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
   const getDashboardPath = (role) => {
     if (!role) return '/login'
     switch (role.toLowerCase()) {
+      case 'super admin':
       case 'admin': return '/admin/dashboard'
       case 'doctor': return '/doctor/dashboard'
       case 'receptionist': return '/receptionist/dashboard'
@@ -88,7 +90,13 @@ export default function App() {
         <BrowserRouter>
         <Routes>
           <Route path="/login" element={currentUser ? <Navigate to={getDashboardPath(currentUser.role)} replace /> : <LoginPage onLogin={(u) => {
-            localStorage.setItem('ashdent_user', JSON.stringify(u)); localStorage.setItem('doctosmart_user', JSON.stringify(u));
+            localStorage.setItem('ashdent_user', JSON.stringify(u));
+            localStorage.setItem('doctosmart_user', JSON.stringify(u));
+            if (u.access) {
+              localStorage.setItem('ashdent_access_token', u.access);
+              localStorage.setItem('token', u.access);
+            }
+            if (u.refresh) localStorage.setItem('ashdent_refresh_token', u.refresh);
             // Hard redirect ensures no stale React state causes wrong dashboard
             window.location.href = getDashboardPath(u.role)
           }} />} />
@@ -107,10 +115,12 @@ export default function App() {
             <Route path="consultation-cases/:patientId" element={<TreatmentCases />} />
             <Route path="create-case/:patientId" element={<CreateCaseForm />} />
             <Route path="odontogram/:patientId" element={<OdontogramPage />} />
+            <Route path="diagnosis/:caseId" element={<DiagnosisPage />} />
+            <Route path="treatment-plans" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="treatment-plans/:caseId" element={<TreatmentPlansPage />} />
             <Route path="new-treatment-case/:patientId" element={<NewTreatmentCaseForm />} />
             <Route path="case-sheet/:caseId" element={<ExistingCaseSheet />} />
-            <Route path="follow-ups" element={<FollowUps />} />
+            <Route path="follow-ups" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="pre-bookings" element={<PreBookings />} />
             <Route path="treatment-rates" element={<TreatmentRates />} />
             <Route path="reports" element={<Reports />} />
@@ -128,6 +138,7 @@ export default function App() {
             <Route path="doctors" element={<Doctors />} />
             <Route path="doctor-slots" element={<DoctorSlots userRole="Admin" />} />
 
+            <Route path="company-management" element={<CompanyManagement />} />
             <Route path="pathology-lab" element={<PathologyLabSettings />} />
             <Route path="dental-lab" element={<DentalLabSettings />} />
             <Route path="tele-medicine" element={<TeleMedicine userRole="Admin" />} />
@@ -150,10 +161,11 @@ export default function App() {
             <Route path="odontogram/:patientId" element={<OdontogramPage />} />
             <Route path="diagnosis/:caseId" element={<DiagnosisPage />} />
             <Route path="clinical-workflow/:caseId" element={<ClinicalWorkflow />} />
+            <Route path="treatment-plans" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="treatment-plans/:caseId" element={<TreatmentPlansPage />} />
             <Route path="new-treatment-case/:patientId" element={<NewTreatmentCaseForm />} />
             <Route path="case-sheet/:caseId" element={<ExistingCaseSheet />} />
-            <Route path="follow-ups" element={<FollowUps />} />
+            <Route path="follow-ups" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="pre-bookings" element={<PreBookings />} />
             <Route path="tele-medicine" element={<TeleMedicine userRole="Doctor" />} />
             <Route path="website-appointment" element={<WebsiteAppointments userRole="Doctor" />} />
@@ -176,10 +188,11 @@ export default function App() {
             <Route path="create-case/:patientId" element={<CreateCaseForm />} />
             <Route path="odontogram/:patientId" element={<OdontogramPage />} />
             <Route path="diagnosis/:caseId" element={<DiagnosisPage />} />
+            <Route path="treatment-plans" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="treatment-plans/:caseId" element={<TreatmentPlansPage />} />
             <Route path="new-treatment-case/:patientId" element={<NewTreatmentCaseForm />} />
             <Route path="case-sheet/:caseId" element={<ExistingCaseSheet />} />
-            <Route path="follow-ups" element={<FollowUps />} />
+            <Route path="follow-ups" element={<TreatmentPlansPage defaultFilter="In Progress" />} />
             <Route path="pre-bookings" element={<PreBookings />} />
             <Route path="tele-medicine" element={<TeleMedicine userRole="Receptionist" />} />
             <Route path="website-appointment" element={<WebsiteAppointments userRole="Receptionist" />} />

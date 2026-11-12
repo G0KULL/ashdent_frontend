@@ -128,6 +128,33 @@
   font-weight: 600;
 }
 
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+  .glassCard {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+  .header {
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 22px;
+  }
+  .header p {
+    font-size: 13px;
+  }
+  .inputGroup input {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .loginBtn {
+    padding: 14px;
+    font-size: 15px;
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

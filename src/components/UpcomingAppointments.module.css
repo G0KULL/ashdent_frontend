@@ -140,3 +140,9 @@
   font-size: 11px;
   color: #64748b;
 }
+
+@media (max-width: 600px) {
+  .card {
+    padding: 16px 12px;
+  }
+}

@@ -674,3 +674,10 @@
   color: #94a3b8;
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  .modalContent {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+  }
+}

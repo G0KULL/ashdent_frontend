@@ -266,7 +266,9 @@
   gap: 1rem;
   background-color: #f8fafc;
   flex: 1;
-  min-height: 400px;
+  min-height: 350px;
+  max-height: 650px;
+  overflow-y: auto;
 }
 
 .kanbanCard {
@@ -403,4 +405,309 @@
 
 .btnDelete:hover {
   background: #fef2f2;
+}
+
+/* === DUAL-MODE SWITCHER & COMPACT CLINICAL TABLE (STRATEGY 1) === */
+
+.viewSwitcher {
+  display: inline-flex;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+  gap: 2px;
+}
+
+.switcherBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.switcherBtn:hover {
+  color: #0f172a;
+}
+
+.switcherBtnActive {
+  background: white;
+  color: #0f766e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tableToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filterTab:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.filterTabActive {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  font-weight: 600;
+}
+
+.filterTabCount {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.filterTabActive .filterTabCount {
+  background: #0284c7;
+  color: white;
+}
+
+.summaryMeta {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.825rem;
+  color: #64748b;
+}
+
+.summaryMeta strong {
+  color: #0f172a;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+}
+
+.clinicalTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.clinicalTh {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.clinicalTr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.clinicalTr:last-child {
+  border-bottom: none;
+}
+
+.clinicalTr:hover {
+  background-color: #f8fafc;
+}
+
+.clinicalTd {
+  padding: 0.65rem 0.85rem;
+  vertical-align: middle;
+  color: #334155;
+}
+
+.toothCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.toothCellImg {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.surfaceBadge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+}
+
+.statusSelect {
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.statusPlanned {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.statusInProgress {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.statusCompleted {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.tableActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.actionIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionIconBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.actionIconBtnDanger {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.actionIconBtnDanger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.customPriceTag {
+  font-size: 0.68rem;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  margin-left: 0.35rem;
+  font-weight: 600;
+}
+
+/* ── Treatment Plans Page Responsive Enhancements ── */
+@media (max-width: 768px) {
+  .scrollContainer {
+    padding: 1rem 0.5rem;
+  }
+  .patientHorizontalCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .patientInfoGrid {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .drawer {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .drawerGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .headerActions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tableToolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scrollContainer {
+    padding: 0.75rem 0.25rem;
+  }
+  .patientHorizontalCard {
+    padding: 0.85rem;
+  }
+  .drawerFooter {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .drawerFooter button {
+    width: 100%;
+  }
 }

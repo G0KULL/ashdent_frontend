@@ -64,3 +64,13 @@
 .btn:hover .label {
   color: #0284c7;
 }
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .card {
+    padding: 16px 12px;
+  }
+}

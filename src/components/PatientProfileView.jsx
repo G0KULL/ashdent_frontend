@@ -24,9 +24,22 @@ function EditPatientModal({ patient, onClose, onSaved }) {
     age: patient.age !== undefined && patient.age !== null ? String(patient.age) : '',
     address: patient.address || '',
     pincode: patient.pincode || '',
+    email: patient.email || '',
+    occupation: patient.occupation || '',
+    doctor: patient.doctor?.id || (typeof patient.doctor === 'number' || (typeof patient.doctor === 'string' && patient.doctor) ? String(patient.doctor) : '') || '',
   })
+  const [doctorsList, setDoctorsList] = useState([])
   const [errors, setErrors] = useState({})
   const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/doctors/`, { headers: getHeaders() })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setDoctorsList(data)
+      })
+      .catch(err => console.error('Error fetching doctors for edit modal:', err))
+  }, [])
 
   function handleDobChange(val) {
     const todayStr = new Date().toISOString().split('T')[0]
@@ -84,6 +97,9 @@ function EditPatientModal({ patient, onClose, onSaved }) {
         age: formData.age !== '' && formData.age !== null ? parseInt(formData.age, 10) : null,
         address: formData.address || null,
         pincode: formData.pincode || null,
+        email: formData.email ? formData.email.trim() : null,
+        occupation: formData.occupation ? formData.occupation.trim() : null,
+        doctor: formData.doctor ? parseInt(formData.doctor, 10) : null,
       }
       const res = await fetch(`${API_BASE}/patient/${patient.id}/profile/`, {
         method: 'PATCH',
@@ -109,7 +125,7 @@ function EditPatientModal({ patient, onClose, onSaved }) {
       <div className={styles.modal} style={{ maxWidth: 540 }}>
         <div className={styles.header}>
           <h2 className={styles.headerTitle}>Edit Patient Details</h2>
-          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+          <button className={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
         <div className={styles.body} style={{ padding: '20px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -141,6 +157,38 @@ function EditPatientModal({ patient, onClose, onSaved }) {
               <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Age</label>
               <input style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }} placeholder="Age" value={formData.age} onChange={e => handleAgeChange(e.target.value)} />
               {errors.age && <span style={{ color: '#ef4444', fontSize: 11 }}>{errors.age}</span>}
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Assigned Doctor</label>
+              <select
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                value={formData.doctor}
+                onChange={e => setFormData({ ...formData, doctor: e.target.value })}
+              >
+                <option value="">Select Doctor</option>
+                {doctorsList.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Occupation</label>
+              <input
+                placeholder="e.g. Engineer"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                value={formData.occupation}
+                onChange={e => setFormData({ ...formData, occupation: e.target.value })}
+              />
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Email</label>
+              <input
+                type="email"
+                placeholder="e.g. patient@example.com"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                value={formData.email}
+                onChange={e => setFormData({ ...formData, email: e.target.value })}
+              />
             </div>
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Address</label>
@@ -267,6 +315,8 @@ export default function PatientProfileView({
           justifyContent: 'space-between',
           alignItems: 'center',
           background: '#ffffff',
+          flexWrap: 'wrap',
+          gap: 16
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{

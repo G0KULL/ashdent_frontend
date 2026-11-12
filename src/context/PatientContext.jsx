@@ -8,14 +8,6 @@ export function PatientProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activePatient, setActivePatient] = useState(null)
 
-  // Re-fetch whenever searchQuery changes (debounce via useEffect)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchPatients(searchQuery)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
   const fetchPatients = useCallback(async (query = '', date = '') => {
     try {
       const res = await fetch(`${API_BASE}/patient/search/?q=${encodeURIComponent(query)}&date=${date}`, { headers: getHeaders() })
@@ -37,10 +29,13 @@ export function PatientProvider({ children }) {
     }
   }, [])
 
-  // Initial load
+  // Initial load and debounced search
   useEffect(() => {
-    fetchPatients('')
-  }, [fetchPatients])
+    const timer = setTimeout(() => {
+      fetchPatients(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, fetchPatients])
 
   const [groups, setGroups] = useState(['General', 'Priority', 'VIP'])
   const nextId = (patients.length > 0 && typeof patients[0].id === 'number' 

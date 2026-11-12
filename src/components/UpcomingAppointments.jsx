@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './UpcomingAppointments.module.css'
 
 const STATUS_META = {
@@ -27,10 +28,11 @@ export default function UpcomingAppointments({ onNavigate }) {
   const [appointments, setAppointments] = useState([])
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-    const headers = { 'Content-Type': 'application/json', 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
-    fetch('http://127.0.0.1:8000/api/appointments/today/', { headers })
-      .then(res => res.json())
+    fetch(`${API_BASE}/appointments/today/`, { headers: getHeaders() })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => setAppointments(Array.isArray(data) ? data.slice(0, 5) : []))
       .catch(console.error)
   }, [])

@@ -121,7 +121,7 @@ export default function BillingModal({ billingId, patientId, patientName, onClos
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} style={{ maxWidth: '900px' }} onClick={e => e.stopPropagation()}>
+      <div className={styles.modal} style={{ maxWidth: '900px', width: '95%' }} onClick={e => e.stopPropagation()}>
         <header className={styles.header}>
            <h3>Billing Details - {patientName}</h3>
            <button onClick={onClose}>✕</button>
@@ -157,8 +157,9 @@ export default function BillingModal({ billingId, patientId, patientName, onClos
                   ))}
                 </tbody>
               </table>
+              </div>
  
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '40px', marginTop: '30px', borderTop: '2px solid var(--border-light)', paddingTop: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '40px', marginTop: '30px', borderTop: '2px solid var(--border-light)', paddingTop: '20px' }}>
                 <div>
                    <div style={{ background: 'rgba(14, 165, 233, 0.15)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(14, 165, 233, 0.3)' }}>
                       <p style={{ margin: 0, fontSize: '13px', color: '#38bdf8' }}>

@@ -56,7 +56,7 @@ export default function PatientEMRView({ patientId, patientName, onEditNote }) {
     );
   }
 
-  const { patient, medical_alerts, tooth_conditions, treatment_plans, performed_treatments, treatment_sessions, prescriptions, investigations, visits_timeline } = emrData;
+  const { patient, medical_alerts, tooth_conditions, treatment_plans, performed_treatments, treatment_sessions, prescriptions, investigations, visits_timeline, estimates = [], financial_summary = {} } = emrData;
 
   // Filter visits timeline if a specific visit is selected
   const activeTimeline = selectedVisitId === 'all'
@@ -484,6 +484,163 @@ export default function PatientEMRView({ patientId, patientName, onEditNote }) {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 9. Estimates, Invoices & Financial Account Ledger */}
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>
+            <span>💳</span> 8. Treatment Estimates, Invoices & Financial Summary
+          </h3>
+          <span className={styles.sectionBadge}>
+            Balance: ₹{parseFloat(financial_summary.balance_due || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className={styles.sectionBody}>
+          {/* Quick Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TOTAL INVOICED</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                ₹{parseFloat(financial_summary.total_billed || 0).toFixed(2)}
+              </div>
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>TOTAL COLLECTED</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#16a34a' }}>
+                ₹{parseFloat(financial_summary.total_paid || 0).toFixed(2)}
+              </div>
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#991b1b', fontWeight: 600 }}>OUTSTANDING BALANCE</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#dc2626' }}>
+                ₹{parseFloat(financial_summary.balance_due || 0).toFixed(2)}
+              </div>
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#1e40af', fontWeight: 600 }}>ACCEPTED ESTIMATES UNBILLED</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>
+                ₹{parseFloat(financial_summary.unbilled_accepted_estimate_total || 0).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Estimates Breakdown */}
+          <div style={{ marginBottom: '24px' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>📋</span> Formal Treatment Estimates ({estimates.length})
+            </h4>
+            {estimates.length === 0 ? (
+              <div className={styles.emptyState}>No estimates recorded for this patient.</div>
+            ) : (
+              <table className={styles.emrTable}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Estimate #</th>
+                    <th>Status</th>
+                    <th>Procedures</th>
+                    <th>Total (₹)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {estimates.map(est => (
+                    <tr key={est.id}>
+                      <td>{new Date(est.created_at).toLocaleDateString()}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#059669' }}>
+                        {est.estimate_number} (v{est.version})
+                      </td>
+                      <td>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700,
+                          background: est.status === 'Accepted' ? '#dcfce7' : est.status === 'Billed' ? '#e0e7ff' : '#f1f5f9',
+                          color: est.status === 'Accepted' ? '#166534' : est.status === 'Billed' ? '#4338ca' : '#475569'
+                        }}>
+                          {est.status}
+                        </span>
+                      </td>
+                      <td>
+                        {(est.items || []).map((it, idx) => (
+                          <div key={idx} style={{ fontSize: '0.8rem' }}>
+                            {it.procedure_name} {it.tooth_number ? `(Tooth ${it.tooth_number})` : ''} x {it.quantity}
+                          </div>
+                        ))}
+                      </td>
+                      <td style={{ fontWeight: 700 }}>₹{parseFloat(est.total_amount || 0).toFixed(2)}</td>
+                      <td>
+                        <button
+                          className={styles.btnPdfSecondary}
+                          onClick={() => window.open(`http://127.0.0.1:8000/api/estimates/${est.id}/pdf/`, '_blank')}
+                          style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                        >
+                          📄 PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Invoices Breakdown */}
+          <div>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🧾</span> Billed Tax Invoices ({financial_summary.bills?.length || 0})
+            </h4>
+            {(!financial_summary.bills || financial_summary.bills.length === 0) ? (
+              <div className={styles.emptyState}>No billing transactions recorded.</div>
+            ) : (
+              <table className={styles.emrTable}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {financial_summary.bills.map(b => (
+                    <tr key={b.id}>
+                      <td>{new Date(b.created_at).toLocaleDateString()}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#4f46e5' }}>
+                        {b.invoice_number}
+                      </td>
+                      <td>₹{parseFloat(b.total_amount || 0).toFixed(2)}</td>
+                      <td style={{ color: '#16a34a', fontWeight: 600 }}>₹{parseFloat(b.paid_amount || 0).toFixed(2)}</td>
+                      <td style={{ color: parseFloat(b.balance_amount || 0) > 0 ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
+                        ₹{parseFloat(b.balance_amount || 0).toFixed(2)}
+                      </td>
+                      <td>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700,
+                          background: b.status === 'Paid' ? '#dcfce7' : '#fee2e2',
+                          color: b.status === 'Paid' ? '#166534' : '#991b1b'
+                        }}>
+                          {b.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className={styles.btnPdfSecondary}
+                          onClick={() => window.open(`http://127.0.0.1:8000/api/billing/${b.id}/pdf/`, '_blank')}
+                          style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                        >
+                          📄 Invoice PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </div>

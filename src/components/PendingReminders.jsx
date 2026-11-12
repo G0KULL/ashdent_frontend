@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE, getHeaders } from '../utils/api'
 import styles from './PendingReminders.module.css'
-
-const API_BASE = 'http://127.0.0.1:8000/api'
 
 export default function PendingReminders({ onNavigate }) {
   const navigate = useNavigate()
@@ -22,9 +21,7 @@ export default function PendingReminders({ onNavigate }) {
   const fetchReminders = async () => {
     setLoading(true)
     try {
-      const user = JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}')
-      const headers = { 'X-User-Id': user.id || '', 'X-Username': user.username || '' }
-      const res = await fetch(`${API_BASE}/reminders/pending/`, { headers })
+      const res = await fetch(`${API_BASE}/reminders/pending/`, { headers: getHeaders() })
       if (res.ok) {
         const data = await res.json()
         setReminders(Array.isArray(data) ? data : [])
@@ -54,7 +51,7 @@ export default function PendingReminders({ onNavigate }) {
       }
       const res = await fetch(`${API_BASE}/communication-logs/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(payload)
       })
       if (res.ok) {

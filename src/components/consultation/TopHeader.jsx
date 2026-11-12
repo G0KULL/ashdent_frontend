@@ -1,9 +1,25 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Bell, Plus, User } from 'lucide-react';
 import { useConsultation } from '../../context/ConsultationContext';
 
-const TopHeader = ({ hidePatientHeader = false }) => {
-  const { patient } = useConsultation();
+const TopHeader = ({ hidePatientHeader = false, doctorName, doctor, patient: propPatient }) => {
+  const { patient: contextPatient } = useConsultation();
+  const location = useLocation();
+  const patient = propPatient || contextPatient;
+
+  // Resolve assigned doctor from props, router state, context, or session
+  const authUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('ashdent_user') || localStorage.getItem('doctosmart_user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const loggedDoctor = authUser.role === 'Doctor' ? (authUser.name || authUser.username) : null;
+  const stateDoctor = location.state?.doctorName || location.state?.doctor;
+
+  const resolvedDoctor = doctorName || doctor || stateDoctor || patient?.doctor_name || patient?.doctorName || patient?.assignedDoctor || loggedDoctor;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -57,7 +73,7 @@ const TopHeader = ({ hidePatientHeader = false }) => {
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#0f172a' }}>
                 {(() => {
-                  const rawDoc = patient?.doctor_name || patient?.doctorName || patient?.assignedDoctor;
+                  const rawDoc = resolvedDoctor;
                   if (!rawDoc || rawDoc === 'Doctor not assigned' || rawDoc === 'Unassigned') {
                     return 'Doctor not assigned';
                   }

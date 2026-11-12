@@ -126,3 +126,13 @@
   border-radius: 12px;
   border: 2px dashed #e2e8f0;
 }
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .patientCard {
+    padding: 16px 14px;
+  }
+}

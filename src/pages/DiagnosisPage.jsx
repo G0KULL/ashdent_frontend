@@ -357,7 +357,7 @@ export default function DiagnosisPage() {
             </div>
             <div className={styles.patientMetaItem}>
               <span className={styles.patientMetaLabel}>Location</span>
-              <span className={styles.patientMetaValue}>{clinicLocation}</span>
+              <span className={styles.patientMetaValue}>{location.state?.patientLocation || activePatient?.address || clinicLocation || '—'}</span>
             </div>
             <div className={styles.patientMetaItem}>
               <span className={styles.patientMetaLabel}>Alert</span>

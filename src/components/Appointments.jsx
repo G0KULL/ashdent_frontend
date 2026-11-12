@@ -68,7 +68,8 @@ export default function Appointments({ onNavigate, userRole }) {
     patientName: '',
     doctor: '',
     date: new Date().toISOString().split('T')[0],
-    time: '10:00',
+    time: '',
+    endTime: '',
     status: 'Scheduled',
     isVirtual: false,
     consultationFee: ''
@@ -115,9 +116,17 @@ export default function Appointments({ onNavigate, userRole }) {
         if (data.is_on_leave) {
           setLeaveAlert(data.leave_reason || 'Doctor is on approved leave')
           setCandidateSlots([])
+          setBookingData(prev => ({ ...prev, time: '', endTime: '' }))
         } else {
           setLeaveAlert(null)
-          setCandidateSlots(data.slots || [])
+          const slots = data.slots || []
+          setCandidateSlots(slots)
+          setBookingData(prev => {
+            if (prev.time && !slots.some(s => s.time === prev.time && s.is_available)) {
+              return { ...prev, time: '', endTime: '' }
+            }
+            return prev
+          })
         }
       })
       .catch(err => {
@@ -136,12 +145,14 @@ export default function Appointments({ onNavigate, userRole }) {
     }
     setLoadingEditSlots(true)
     const branchParam = activeBranch?.id ? `&branch_id=${activeBranch.id}` : ''
-    fetch(`${API_BASE}/doctors/${editForm.doctor}/available-slots/?date=${editForm.date}${branchParam}`, { headers: getHeaders() })
+    const excludeParam = editingAppt?.id ? `&exclude_appointment_id=${editingAppt.id}` : ''
+    fetch(`${API_BASE}/doctors/${editForm.doctor}/available-slots/?date=${editForm.date}${branchParam}${excludeParam}`, { headers: getHeaders() })
       .then(r => r.json())
       .then(data => {
         if (data.is_on_leave) {
           setEditLeaveAlert(data.leave_reason || 'Doctor is on approved leave')
           setEditCandidateSlots([])
+          setEditForm(prev => ({ ...prev, time: '' }))
         } else {
           setEditLeaveAlert(null)
           setEditCandidateSlots(data.slots || [])
@@ -152,7 +163,7 @@ export default function Appointments({ onNavigate, userRole }) {
         setEditCandidateSlots([])
       })
       .finally(() => setLoadingEditSlots(false))
-  }, [editForm.doctor, editForm.date, activeBranch?.id])
+  }, [editForm.doctor, editForm.date, activeBranch?.id, editingAppt?.id])
 
   // Fetch Appointments
   const fetchAppointments = useCallback(async (selectedDate) => {
@@ -239,7 +250,9 @@ export default function Appointments({ onNavigate, userRole }) {
 
   const handleSaveBooking = async (e) => {
     e.preventDefault()
-    if (!bookingData.patientId || !bookingData.date) return alert('Please select a patient and date')
+    if (!bookingData.patientId || !bookingData.doctor || !bookingData.date || !bookingData.time) {
+      return alert('Please select a patient, doctor, appointment date, and an available time slot.')
+    }
     setSaving(true)
 
     let meetingLink = null
@@ -291,7 +304,7 @@ export default function Appointments({ onNavigate, userRole }) {
         }
 
         setShowBooking(false)
-        setBookingData({ ...bookingData, patientId: '', patientName: '', isVirtual: false, consultationFee: '' })
+        setBookingData({ ...bookingData, patientId: '', patientName: '', isVirtual: false, consultationFee: '', time: '', endTime: '' })
         setSelectedProfile(null)
         setPatientQuery('')
         fetchAppointments(date)
@@ -431,6 +444,29 @@ export default function Appointments({ onNavigate, userRole }) {
       doctorName: appt.doctor_name,
       appointmentId: appt.id,
     })
+
+    if (appt.visit_type === 'Follow-up' || appt.status === 'Follow-up') {
+      const role = userRole?.toLowerCase() || 'doctor'
+      const docObj = doctors.find(d => String(d.id) === String(appt.doctor))
+      const docId = appt.doctor || docObj?.id || null
+      const docName = appt.doctor_name || docObj?.name || 'Doctor not assigned'
+      navigate(`/${role}/treatment-plans/${appt.patient}`, {
+        state: {
+          appointmentId: appt.id,
+          patientId: appt.patient,
+          patientName: appt.patient_name,
+          patientPhone: appt.patient_phone,
+          patientAge: appt.patient_age,
+          patientGender: appt.patient_gender,
+          doctorId: docId,
+          doctorName: docName,
+          appointmentDate: appt.date,
+          appointmentTime: appt.time_formatted || appt.time,
+          defaultFilter: 'In Progress'
+        }
+      })
+      return
+    }
 
     setCheckingCaseSheet(true)
     try {
@@ -657,7 +693,7 @@ export default function Appointments({ onNavigate, userRole }) {
                 <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Doctor</label>
                 <select
                   value={bookingData.doctor}
-                  onChange={e => setBookingData(p => ({ ...p, doctor: e.target.value }))}
+                  onChange={e => setBookingData(p => ({ ...p, doctor: e.target.value, time: '', endTime: '' }))}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: 13 }}
                 >
                   <option value="">Select Doctor</option>
@@ -669,14 +705,18 @@ export default function Appointments({ onNavigate, userRole }) {
                 <input
                   type="date"
                   value={bookingData.date}
-                  onChange={e => setBookingData(p => ({ ...p, date: e.target.value }))}
+                  onChange={e => setBookingData(p => ({ ...p, date: e.target.value, time: '', endTime: '' }))}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: 13, boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>
-                  Available Candidate Slots {bookingData.time && <span style={{ color: '#4f46e5', fontWeight: 800 }}>({bookingData.time})</span>}
+                  Available Candidate Slots {bookingData.time ? (
+                    <span style={{ color: '#4f46e5', fontWeight: 800 }}>({bookingData.time}{bookingData.endTime ? ` - ${bookingData.endTime}` : ''})</span>
+                  ) : (
+                    <span style={{ color: '#94a3b8', fontWeight: 500 }}>(Select an available slot below)</span>
+                  )}
                 </label>
                 {loadingSlots ? (
                   <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0' }}>Loading candidate slots...</p>
@@ -688,7 +728,7 @@ export default function Appointments({ onNavigate, userRole }) {
                   <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0', fontStyle: 'italic' }}>Please select a doctor to view candidate slots.</p>
                 ) : candidateSlots.length === 0 ? (
                   <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '10px 14px', borderRadius: 8, color: '#92400e', fontSize: 13 }}>
-                    ℹ️ Doctor has no active working schedule on this day.
+                    ℹ️ No slots available for the selected doctor on this date.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 150, overflowY: 'auto', padding: 4 }}>
@@ -712,7 +752,7 @@ export default function Appointments({ onNavigate, userRole }) {
                             }}
                             title={slot.is_blocked ? 'Blocked Period' : 'Already Booked'}
                           >
-                            <span>{slot.time}</span>
+                            <span>{slot.time}{slot.end_time ? ` - ${slot.end_time}` : ''}</span>
                             <span style={{ fontSize: 10, background: '#e2e8f0', padding: '1px 4px', borderRadius: 4 }}>
                               {slot.status || 'Booked'}
                             </span>
@@ -723,7 +763,7 @@ export default function Appointments({ onNavigate, userRole }) {
                         <button
                           key={sIdx}
                           type="button"
-                          onClick={() => setBookingData(p => ({ ...p, time: slot.time }))}
+                          onClick={() => setBookingData(p => ({ ...p, time: slot.time, endTime: slot.end_time }))}
                           style={{
                             padding: '6px 12px',
                             borderRadius: 8,
@@ -736,7 +776,7 @@ export default function Appointments({ onNavigate, userRole }) {
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          {slot.time}
+                          {slot.time}{slot.end_time ? ` - ${slot.end_time}` : ''}
                         </button>
                       )
                     })}
@@ -768,11 +808,11 @@ export default function Appointments({ onNavigate, userRole }) {
               <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
                 <button
                   type="submit"
-                  disabled={saving || !bookingData.patientId}
+                  disabled={saving || !bookingData.patientId || !bookingData.doctor || !bookingData.date || !bookingData.time}
                   style={{
                     width: '100%', padding: '12px', background: '#4f46e5', color: 'white',
                     border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                    opacity: (saving || !bookingData.patientId) ? 0.6 : 1
+                    opacity: (saving || !bookingData.patientId || !bookingData.doctor || !bookingData.date || !bookingData.time) ? 0.6 : 1
                   }}
                 >
                   {saving ? 'Booking...' : '✨ Confirm Appointment'}
@@ -993,9 +1033,9 @@ export default function Appointments({ onNavigate, userRole }) {
                   <th style={{ width: '70px' }}>Token</th>
                   <th>Patient</th>
                   <th style={{ width: '110px' }}>Age / Gender</th>
-                  <th style={{ width: '100px' }}>Time</th>
+                  <th style={{ width: '145px' }}>Time</th>
                   <th>Doctor</th>
-                  <th style={{ width: '120px' }}>Visit Type</th>
+                  {/* <th style={{ width: '120px' }}>Visit Type</th> */}
                   <th style={{ width: '120px', textAlign: 'center' }}>Status</th>
                   <th style={{ width: '180px', textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -1036,13 +1076,35 @@ export default function Appointments({ onNavigate, userRole }) {
 
                       {/* Age / Gender */}
                       <td>
-                        {appt.patient_age ? `${appt.patient_age} Y` : '—'} / {appt.patient_gender || '—'}
+                        {(() => {
+                          const age = (appt.patient_age !== undefined && appt.patient_age !== null && appt.patient_age !== '')
+                            ? appt.patient_age
+                            : (appt.patient?.age !== undefined && appt.patient?.age !== null ? appt.patient.age : null);
+                          const gender = appt.patient_gender || appt.patient?.gender || '—';
+                          return `${age !== null ? `${age} Y` : '—'} / ${gender}`;
+                        })()}
                       </td>
 
                       {/* Time */}
                       <td>
                         <span className={styles.timeCell}>
-                          {appt.time_formatted || appt.time?.slice(0, 5) || '—'}
+                          {(() => {
+                            const tf = (appt.time_formatted && appt.time_formatted !== '--:--') ? appt.time_formatted : null;
+                            const ef = (appt.end_time_formatted && appt.end_time_formatted !== '--:--') ? appt.end_time_formatted : null;
+                            if (tf && ef) return `${tf} - ${ef}`;
+                            if (tf) return tf;
+                            if (appt.time) {
+                              try {
+                                const [h, m] = String(appt.time).split(':');
+                                const d = new Date();
+                                d.setHours(parseInt(h, 10), parseInt(m, 10));
+                                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              } catch {
+                                return String(appt.time).slice(0, 5);
+                              }
+                            }
+                            return '—';
+                          })()}
                         </span>
                       </td>
 
@@ -1054,7 +1116,7 @@ export default function Appointments({ onNavigate, userRole }) {
                       </td>
 
                       {/* Visit Type */}
-                      <td>
+                      {/* <td>
                         <span
                           className={styles.visitBadge}
                           style={{
@@ -1065,7 +1127,7 @@ export default function Appointments({ onNavigate, userRole }) {
                         >
                           {appt.is_virtual ? '📹 Telemedicine' : 'In-Office'}
                         </span>
-                      </td>
+                      </td> */}
 
                       {/* Status Badge */}
                       <td style={{ textAlign: 'center' }}>
@@ -1157,7 +1219,7 @@ export default function Appointments({ onNavigate, userRole }) {
                 </label>
                 <select
                   value={editForm.doctor}
-                  onChange={e => setEditForm(f => ({ ...f, doctor: e.target.value }))}
+                  onChange={e => setEditForm(f => ({ ...f, doctor: e.target.value, time: '' }))}
                   className={styles.filterSelect}
                 >
                   <option value="">-- Select Doctor --</option>
@@ -1174,7 +1236,7 @@ export default function Appointments({ onNavigate, userRole }) {
                 <input
                   type="date"
                   value={editForm.date}
-                  onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                  onChange={e => setEditForm(f => ({ ...f, date: e.target.value, time: '' }))}
                   className={styles.searchInput}
                 />
               </div>
@@ -1193,7 +1255,7 @@ export default function Appointments({ onNavigate, userRole }) {
                   <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0', fontStyle: 'italic' }}>Please select a doctor.</p>
                 ) : editCandidateSlots.length === 0 ? (
                   <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '8px 12px', borderRadius: 8, color: '#92400e', fontSize: 12 }}>
-                    ℹ️ Doctor has no active working schedule on this day.
+                    ℹ️ No slots available for the selected doctor on this date.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto', padding: 4 }}>
@@ -1288,7 +1350,7 @@ export default function Appointments({ onNavigate, userRole }) {
       {/* ── Treatment Case Sheet Modal ── */}
       {showCaseSheetModal && targetAppt && targetAppt.activeCase && (
         <div className={styles.modalOverlay} onClick={() => setShowCaseSheetModal(false)}>
-          <div className={styles.modalCard} onClick={e => e.stopPropagation()} style={{ width: '650px' }}>
+          <div className={styles.modalCard} onClick={e => e.stopPropagation()} style={{ width: '650px', maxWidth: '94vw' }}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>Treatment Case Available</h3>
               <button className={styles.closeModalBtn} onClick={() => setShowCaseSheetModal(false)}>✕</button>

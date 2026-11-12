@@ -134,7 +134,8 @@ export default function PrescriptionView() {
               </div>
 
               {/* Medicine table (no prices for receptionist) */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+              <table style={{ width: '100%', minWidth: '540px', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'transparent', textAlign: 'left' }}>
                     <th style={{ padding: '8px 12px', borderRadius: '8px 0 0 8px', color: 'var(--slate-700)' }}>Medicine</th>
@@ -154,6 +155,7 @@ export default function PrescriptionView() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {/* Read-only notice */}
               <div style={{ marginTop: 12, padding: '8px 12px', background: 'transparent', borderRadius: 8, fontSize: 12, color: '#94a3b8' }}>

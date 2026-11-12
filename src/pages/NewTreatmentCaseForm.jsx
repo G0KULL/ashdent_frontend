@@ -231,7 +231,8 @@ const FormContent = ({ isWorkflowStep }) => {
 
           {/* Section 7: Treatment Plan */}
           <Accordion title="7. Treatment Plan" icon={PenTool}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse' }}>
               <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
                 <tr>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem' }}>Tooth</th>
@@ -255,6 +256,7 @@ const FormContent = ({ isWorkflowStep }) => {
                 </tr>
               </tbody>
             </table>
+            </div>
             <button className={styles.btnSecondary} style={{ marginTop: '1rem' }}>+ Add Procedure</button>
           </Accordion>
 
@@ -295,7 +297,8 @@ const FormContent = ({ isWorkflowStep }) => {
 
           {/* Section 9: Prescription */}
           <Accordion title="9. Prescription" icon={Pill}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse' }}>
               <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
                 <tr>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem' }}>Medicine</th>
@@ -315,6 +318,7 @@ const FormContent = ({ isWorkflowStep }) => {
                 </tr>
               </tbody>
             </table>
+            </div>
             <button className={styles.btnSecondary} style={{ marginTop: '1rem' }}>+ Add Medicine</button>
           </Accordion>
 

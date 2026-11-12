@@ -267,7 +267,7 @@ export default function DashboardFinanceWidgets() {
               <h3>📊 Weekly Income Summary</h3>
               {weekData.length > 0 ? (
                 <div className={styles.chartWrapper}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={240} debounce={50}>
                     <BarChart data={weekData} barSize={40}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} />
@@ -297,7 +297,7 @@ export default function DashboardFinanceWidgets() {
               <h3>🥧 Income Breakdown</h3>
               {incomePieData.length > 0 ? (
                 <div className={styles.chartWrapper}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={240} debounce={50}>
                     <PieChart>
                       <Pie
                         data={incomePieData}
@@ -335,7 +335,7 @@ export default function DashboardFinanceWidgets() {
               <div className={styles.chartBox} style={{ gridColumn: '1 / -1' }}>
                 <h3>👨‍⚕️ Doctor-wise Revenue</h3>
                 <div className={styles.chartWrapper}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={240} debounce={50}>
                     <BarChart data={doctorRevenue} barSize={50}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="doctor_name" tick={{ fontSize: 12, fill: '#64748b' }} />
@@ -371,7 +371,7 @@ export default function DashboardFinanceWidgets() {
               <h3>📉 Expense Trend (Week-wise)</h3>
               {dayByDayExpense.length > 0 ? (
                 <div className={styles.chartWrapper}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={240} debounce={50}>
                     <BarChart data={dayByDayExpense} barSize={30}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} />

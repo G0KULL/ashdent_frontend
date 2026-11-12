@@ -75,8 +75,8 @@ export function IncomeModal({ onClose }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
           <div style={chartBoxStyle}>
             <h3 style={chartTitleStyle}>Day-by-Day Revenue</h3>
-            <div style={{ height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ height: 250, width: "100%", minWidth: 0, minHeight: 250 }}>
+              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250} debounce={50}>
                 <AreaChart data={data?.monthlyIncome?.day_by_day || []}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="date" tick={{fontSize: 11}} />
@@ -90,8 +90,8 @@ export function IncomeModal({ onClose }) {
 
           <div style={chartBoxStyle}>
             <h3 style={chartTitleStyle}>Doctor-wise Revenue</h3>
-            <div style={{ height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ height: 250, width: "100%", minWidth: 0, minHeight: 250 }}>
+              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250} debounce={50}>
                 <BarChart data={data?.doctorRevenue || []}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="doctor_name" tick={{fontSize: 11}} />
@@ -162,7 +162,8 @@ export function ExpenseModal({ onClose }) {
           </div>
         </div>
 
-        <table style={tableStyle}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+        <table style={{ ...tableStyle, minWidth: '400px' }}>
           <thead>
             <tr>
               <th style={thStyle}>Category</th>
@@ -183,6 +184,7 @@ export function ExpenseModal({ onClose }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

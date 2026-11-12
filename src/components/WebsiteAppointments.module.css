@@ -51,7 +51,7 @@
 /* Dashboard List styling */
 .listGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   margin-top: 24px;
 }
@@ -485,4 +485,39 @@
   border-radius: 16px;
   border: 1px solid var(--border-light);
   color: #64748b;
+}
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 12px;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .inputGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 12px 8px;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .tabBtn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .instructions {
+    padding: 16px;
+  }
 }
