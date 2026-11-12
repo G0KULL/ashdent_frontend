@@ -153,8 +153,16 @@ if (typeof window !== 'undefined' && nativeFetch) {
   window.fetch = async function (input, init = {}) {
     let url = typeof input === 'string' ? input : (input?.url || '')
     
+    // Auto-normalize production API URL if API_BASE is configured to remote HTTPS domain or relative /api
+    if (API_BASE && API_BASE !== 'http://127.0.0.1:8000/api' && url.includes('http://127.0.0.1:8000/api')) {
+      url = url.replace('http://127.0.0.1:8000/api', API_BASE)
+      if (typeof input === 'string') {
+        input = url
+      }
+    }
+
     // Only intercept API calls
-    const isApi = url.includes('/api/') || url.startsWith(API_BASE)
+    const isApi = url.includes('/api/') || (API_BASE && url.startsWith(API_BASE))
     const isAuthEndpoint = url.includes('/login/') || url.includes('/token/refresh/')
 
     if (!isApi || isAuthEndpoint) {

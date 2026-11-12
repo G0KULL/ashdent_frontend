@@ -54,6 +54,8 @@ import OdontogramPage from './pages/OdontogramPage'
 import DiagnosisPage from './pages/DiagnosisPage'
 import ClinicalWorkflow from './pages/ClinicalWorkflow'
 import CompanyManagement from './pages/CompanyManagement'
+import OfflineBanner from './components/OfflineBanner'
+import PwaPrompt from './components/PwaPrompt'
 import './App.css'
 
 export default function App() {
@@ -88,6 +90,8 @@ export default function App() {
     <BranchProvider>
       <PatientProvider>
         <BrowserRouter>
+        <OfflineBanner />
+        <PwaPrompt />
         <Routes>
           <Route path="/login" element={currentUser ? <Navigate to={getDashboardPath(currentUser.role)} replace /> : <LoginPage onLogin={(u) => {
             localStorage.setItem('ashdent_user', JSON.stringify(u));
