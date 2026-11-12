@@ -701,7 +701,14 @@ const PageContent = ({ defaultFilter: propDefaultFilter }) => {
           </div>
           
           <MedicationsSection patientId={caseId} />
-          <InvestigationsSection patient={patient} />
+          <InvestigationsSection 
+            patient={(patient && (patient.id || patient._id)) ? patient : (activePatient || (caseId && caseId !== 'new' ? { id: caseId, name: location.state?.patientName || 'Patient' } : patient))} 
+            patientId={caseId !== 'new' ? caseId : (activePatient?.id || patient?.id || null)}
+            patientName={location.state?.patientName || activePatient?.name || patient?.name}
+            appointmentId={location.state?.appointmentId}
+            doctorId={assignedDoctorId || location.state?.doctorId}
+            doctorName={assignedDoctor}
+          />
         </div>
       </div>
 

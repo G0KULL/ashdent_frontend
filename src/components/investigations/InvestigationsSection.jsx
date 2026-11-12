@@ -1,17 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './InvestigationsSection.module.css';
 import { API_BASE, getHeaders } from '../../utils/api';
 import { 
   FileText, Plus, Calendar, User, Clock, CheckCircle2, 
   AlertCircle, XCircle, Eye, Download, Trash2, Edit2, 
-  UploadCloud, File, Image as ImageIcon, History, X 
+  UploadCloud, File, Image as ImageIcon, History, X,
+  Activity, ArrowRight
 } from 'lucide-react';
 
 export default function InvestigationsSection({
   patient = null,
+  patientId: propPatientId = null,
+  patientName: propPatientName = null,
   appointment = null,
+  appointmentId: propAppointmentId = null,
   visit = null,
+  visitId: propVisitId = null,
   doctor = null,
+  doctorId: propDoctorId = null,
+  doctorName: propDoctorName = null,
   readOnly = false,
   showHistoryByDefault = false
 }) {
@@ -20,15 +27,18 @@ export default function InvestigationsSection({
   const [historyList, setHistoryList] = useState([]);
   const [masters, setMasters] = useState([]);
   const [doctorsList, setDoctorsList] = useState([]);
+  const [patientsList, setPatientsList] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingAttachments, setEditingAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
+    patient_id: '',
     investigation_master_id: '',
     investigation_name: '',
     investigation_date: new Date().toISOString().split('T')[0],
@@ -43,29 +53,94 @@ export default function InvestigationsSection({
   const fileInputRef = useRef(null);
 
   // Derived patient & appointment IDs
-  const patientId = patient?.id || patient?._id || (typeof patient === 'string' ? patient : null);
-  const appointmentId = appointment?.id || appointment?._id || (typeof appointment === 'string' ? appointment : null);
-  const visitId = visit?.id || visit?._id || (typeof visit === 'string' ? visit : null);
+  const resolvedPatientId = useMemo(() => {
+    if (propPatientId && propPatientId !== 'new') return String(propPatientId);
+    if (patient) {
+      if (typeof patient === 'string' && patient !== 'new') return patient;
+      if (patient.id) return String(patient.id);
+      if (patient._id) return String(patient._id);
+      if (patient.patient_id) return String(patient.patient_id);
+      if (patient.pk) return String(patient.pk);
+    }
+    return '';
+  }, [propPatientId, patient]);
+
+  const resolvedPatientName = useMemo(() => {
+    if (propPatientName) return propPatientName;
+    if (patient && typeof patient === 'object') {
+      return patient.name || patient.patient_name || '';
+    }
+    return '';
+  }, [propPatientName, patient]);
+
+  const resolvedAppointmentId = useMemo(() => {
+    if (propAppointmentId && propAppointmentId !== 'NEW') return String(propAppointmentId);
+    if (appointment) {
+      if (typeof appointment === 'string' && appointment !== 'NEW') return appointment;
+      if (appointment.id) return String(appointment.id);
+      if (appointment._id) return String(appointment._id);
+    }
+    return '';
+  }, [propAppointmentId, appointment]);
+
+  const resolvedVisitId = useMemo(() => {
+    if (propVisitId) return String(propVisitId);
+    if (visit) {
+      if (typeof visit === 'string') return visit;
+      if (visit.id) return String(visit.id);
+      if (visit._id) return String(visit._id);
+    }
+    return '';
+  }, [propVisitId, visit]);
 
   // Referring doctor resolution
-  const resolvedDoctorId = doctor?.id || appointment?.doctor?.id || appointment?.doctor_id || '';
-  const resolvedDoctorName = doctor?.name || appointment?.doctor?.name || appointment?.doctor_name || '';
+  const resolvedDoctorId = useMemo(() => {
+    if (propDoctorId) return String(propDoctorId);
+    if (doctor?.id) return String(doctor.id);
+    if (appointment?.doctor?.id) return String(appointment.doctor.id);
+    if (appointment?.doctor_id) return String(appointment.doctor_id);
+    return '';
+  }, [propDoctorId, doctor, appointment]);
 
-  // 1. Fetch Masters & Doctors
+  // 1. Fetch Masters, Doctors, and Patients
   useEffect(() => {
     fetchMasters();
     fetchDoctors();
+    fetchPatients();
   }, []);
 
   // 2. Fetch current & historical investigations
   useEffect(() => {
-    if (patientId || appointmentId || visitId) {
+    if (resolvedPatientId || resolvedAppointmentId || resolvedVisitId) {
       fetchCurrentInvestigations();
-      if (patientId) {
+      if (resolvedPatientId) {
         fetchHistoryInvestigations();
       }
     }
-  }, [patientId, appointmentId, visitId]);
+  }, [resolvedPatientId, resolvedAppointmentId, resolvedVisitId]);
+
+  // Lock background scroll when modal or lightbox is active
+  useEffect(() => {
+    if (isModalOpen || previewAttachment) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isModalOpen, previewAttachment]);
+
+  // Keyboard shortcut: Escape to close modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (previewAttachment) setPreviewAttachment(null);
+        else if (isModalOpen) setIsModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, previewAttachment]);
 
   const fetchMasters = async () => {
     try {
@@ -95,13 +170,28 @@ export default function InvestigationsSection({
     }
   };
 
+  const fetchPatients = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/patients/`, {
+        headers: getHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.results || []);
+        setPatientsList(list);
+      }
+    } catch (err) {
+      console.warn('Failed to load patients:', err);
+    }
+  };
+
   const fetchCurrentInvestigations = async () => {
     setLoading(true);
     try {
       let url = `${API_BASE}/patient-investigations/?`;
-      if (appointmentId) url += `appointment=${appointmentId}&`;
-      else if (visitId) url += `visit=${visitId}&`;
-      else if (patientId) url += `patient=${patientId}&`;
+      if (resolvedAppointmentId) url += `appointment=${resolvedAppointmentId}&`;
+      else if (resolvedVisitId) url += `visit=${resolvedVisitId}&`;
+      else if (resolvedPatientId) url += `patient=${resolvedPatientId}&`;
 
       const res = await fetch(url, { headers: getHeaders() });
       if (res.ok) {
@@ -116,9 +206,9 @@ export default function InvestigationsSection({
   };
 
   const fetchHistoryInvestigations = async () => {
-    if (!patientId) return;
+    if (!resolvedPatientId) return;
     try {
-      const res = await fetch(`${API_BASE}/patients/${patientId}/investigations-history/`, {
+      const res = await fetch(`${API_BASE}/patients/${resolvedPatientId}/investigations-history/`, {
         headers: getHeaders()
       });
       if (res.ok) {
@@ -132,9 +222,12 @@ export default function InvestigationsSection({
 
   const handleOpenAddModal = () => {
     setEditingId(null);
+    setEditingAttachments([]);
+    const defaultMaster = masters.length > 0 ? masters[0] : null;
     setFormData({
-      investigation_master_id: masters.length > 0 ? masters[0].id : '',
-      investigation_name: masters.length > 0 ? masters[0].name : '',
+      patient_id: resolvedPatientId || (patientsList.length > 0 ? patientsList[0].id : ''),
+      investigation_master_id: defaultMaster ? defaultMaster.id : '',
+      investigation_name: defaultMaster ? defaultMaster.name : '',
       investigation_date: new Date().toISOString().split('T')[0],
       doctor_id: resolvedDoctorId || (doctorsList.length > 0 ? doctorsList[0].id : ''),
       status: 'Requested',
@@ -148,7 +241,9 @@ export default function InvestigationsSection({
 
   const handleOpenEditModal = (inv) => {
     setEditingId(inv.id);
+    setEditingAttachments(inv.attachments || []);
     setFormData({
+      patient_id: inv.patient || resolvedPatientId || '',
       investigation_master_id: inv.investigation_master || '',
       investigation_name: inv.investigation_name || '',
       investigation_date: inv.investigation_date || new Date().toISOString().split('T')[0],
@@ -197,25 +292,31 @@ export default function InvestigationsSection({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const effectivePid = resolvedPatientId || formData.patient_id;
+    if (!effectivePid) {
+      alert('Please select or specify a Patient for this investigation.');
+      return;
+    }
+
     if (!formData.investigation_name && !formData.investigation_master_id) {
-      alert('Please select or specify an investigation type');
+      alert('Please select or specify an investigation type.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const payload = new FormData();
-      if (patientId) payload.append('patient', patientId);
-      if (appointmentId) payload.append('appointment', appointmentId);
-      if (visitId) payload.append('visit', visitId);
+      payload.append('patient', effectivePid);
+      if (resolvedAppointmentId) payload.append('appointment', resolvedAppointmentId);
+      if (resolvedVisitId) payload.append('visit', resolvedVisitId);
       if (formData.doctor_id) payload.append('doctor', formData.doctor_id);
       if (formData.investigation_master_id) payload.append('investigation_master', formData.investigation_master_id);
       payload.append('investigation_name', formData.investigation_name);
       payload.append('investigation_date', formData.investigation_date);
       payload.append('status', formData.status);
-      payload.append('reason', formData.reason);
-      payload.append('findings', formData.findings);
-      payload.append('remarks', formData.remarks);
+      payload.append('reason', formData.reason || '');
+      payload.append('findings', formData.findings || '');
+      payload.append('remarks', formData.remarks || '');
 
       selectedFiles.forEach(file => {
         payload.append('files', file);
@@ -252,6 +353,22 @@ export default function InvestigationsSection({
     }
   };
 
+  const handleQuickStatusChange = async (invId, newStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/patient-investigations/${invId}/`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        fetchCurrentInvestigations();
+        fetchHistoryInvestigations();
+      }
+    } catch (err) {
+      console.error('Quick status update error:', err);
+    }
+  };
+
   const handleDelete = async (invId) => {
     if (!window.confirm('Are you sure you want to delete this investigation record?')) return;
     try {
@@ -276,6 +393,7 @@ export default function InvestigationsSection({
         headers: getHeaders()
       });
       if (res.ok) {
+        setEditingAttachments(prev => prev.filter(a => a.id !== attId));
         fetchCurrentInvestigations();
         fetchHistoryInvestigations();
       }
@@ -288,7 +406,10 @@ export default function InvestigationsSection({
     let badgeClass = styles.statusRequested;
     let icon = <Clock size={12} style={{ marginRight: 4 }} />;
 
-    if (status === 'Result Pending') {
+    if (status === 'In Progress') {
+      badgeClass = styles.statusInProgress;
+      icon = <Activity size={12} style={{ marginRight: 4 }} />;
+    } else if (status === 'Result Pending') {
       badgeClass = styles.statusResultPending;
       icon = <AlertCircle size={12} style={{ marginRight: 4 }} />;
     } else if (status === 'Completed') {
@@ -309,21 +430,24 @@ export default function InvestigationsSection({
 
   const isImageFile = (att) => {
     if (att.file_type && att.file_type.startsWith('image/')) return true;
-    const name = (att.file_name || att.file_url || '').toLowerCase();
+    const name = (att.file_name || att.file_url || att.file || '').toLowerCase();
     return name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.webp');
   };
 
   const getFullFileUrl = (url) => {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://127.0.0.1:8000${url.startsWith('/') ? '' : '/'}${url}`;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+      return url;
+    }
+    const origin = (API_BASE && API_BASE.replace(/\/api\/?$/, '')) || 'http://127.0.0.1:8000';
+    return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   const displayList = activeTab === 'history' ? historyList : investigations;
 
   return (
     <div className={styles.container}>
-      {/* Header */}
+      {/* Section Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.titleIcon}>
@@ -331,7 +455,7 @@ export default function InvestigationsSection({
           </div>
           <div>
             <h3 className={styles.title}>Investigations & Imaging</h3>
-            <p className={styles.subtitle}>Digital Radiographs, OPG, CBCT & Diagnostic Reports</p>
+            <p className={styles.subtitle}>Digital Radiographs, OPG, CBCT & Diagnostic Lab Reports</p>
           </div>
         </div>
 
@@ -359,17 +483,20 @@ export default function InvestigationsSection({
               onClick={handleOpenAddModal}
             >
               <Plus size={16} />
-              Add Investigation
+              Order Investigation
             </button>
           )}
         </div>
       </div>
 
-      {/* Content */}
+      {/* Main Content Area */}
       <div className={styles.content}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-            Loading investigations...
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <Clock className="animate-spin" size={24} />
+            </div>
+            <div className={styles.emptyTitle}>Loading investigations...</div>
           </div>
         ) : displayList.length === 0 ? (
           <div className={styles.emptyState}>
@@ -377,51 +504,48 @@ export default function InvestigationsSection({
               <FileText size={24} />
             </div>
             <div className={styles.emptyTitle}>
-              {activeTab === 'history' ? 'No Investigation History' : 'No Investigations Requested'}
+              {activeTab === 'current' ? 'No investigations ordered for this visit' : 'No prior investigation history recorded'}
             </div>
-            <div className={styles.emptyDesc}>
-              {activeTab === 'history'
-                ? 'No past investigations found for this patient.'
-                : 'Click "Add Investigation" to order OPG, TMJ, Hand-Wrist, Bitewing, or upload patient scan reports.'}
-            </div>
-            {!readOnly && activeTab === 'current' && (
+            <p className={styles.emptyDesc}>
+              {activeTab === 'current'
+                ? 'Order digital radiographs, OPG scans, vitality tests or upload lab reports for this patient.'
+                : 'Historical radiographs and laboratory investigations will appear here once requested.'}
+            </p>
+            {!readOnly && (
               <button
                 type="button"
                 className={styles.btnAdd}
                 onClick={handleOpenAddModal}
               >
                 <Plus size={16} />
-                Add Investigation
+                Order First Investigation
               </button>
             )}
           </div>
         ) : (
           <div className={styles.investigationsGrid}>
             {displayList.map((inv) => (
-              <div key={inv.id} className={styles.card}>
+              <div key={inv.id} className={styles.invCard}>
                 <div className={styles.cardHeader}>
-                  <div>
-                    <h4 className={styles.cardTitle}>{inv.investigation_name}</h4>
-                    <div className={styles.cardMeta}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Calendar size={12} />
-                        {inv.investigation_date}
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <User size={12} />
-                        {inv.doctor_name || resolvedDoctorName || 'Doctor not assigned'}
-                      </span>
+                  <div className={styles.cardHeaderLeft}>
+                    <div className={styles.invIcon}>
+                      <ImageIcon size={18} />
+                    </div>
+                    <div>
+                      <h4 className={styles.invName}>{inv.investigation_name}</h4>
+                      {inv.master_name && inv.master_name !== inv.investigation_name && (
+                        <span className={styles.invMasterTag}>{inv.master_name}</span>
+                      )}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div className={styles.cardHeaderRight}>
                     {renderStatusBadge(inv.status)}
-
                     {!readOnly && (
-                      <div className={styles.cardActions}>
+                      <div className={styles.actionMenu}>
                         <button
                           type="button"
-                          className={styles.actionBtn}
+                          className={styles.iconBtn}
                           title="Edit Investigation"
                           onClick={() => handleOpenEditModal(inv)}
                         >
@@ -429,7 +553,7 @@ export default function InvestigationsSection({
                         </button>
                         <button
                           type="button"
-                          className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                           title="Delete Investigation"
                           onClick={() => handleDelete(inv.id)}
                         >
@@ -441,33 +565,72 @@ export default function InvestigationsSection({
                 </div>
 
                 <div className={styles.cardBody}>
+                  {/* Meta Details */}
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaItem}>
+                      <Calendar size={13} />
+                      {inv.investigation_date}
+                    </span>
+                    <span className={styles.metaItem}>
+                      <User size={13} />
+                      {inv.doctor_name ? `Dr. ${inv.doctor_name}` : 'Clinic Doctor'}
+                    </span>
+                    {inv.patient_name && (
+                      <span className={styles.metaItem}>
+                        <FileText size={13} />
+                        {inv.patient_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick Status Lifecycle Transition */}
+                  {!readOnly && (
+                    <div className={styles.lifecycleRow}>
+                      <span className={styles.lifecycleLabel}>Lifecycle Status:</span>
+                      <select
+                        className={styles.lifecycleSelect}
+                        value={inv.status}
+                        onChange={(e) => handleQuickStatusChange(inv.id, e.target.value)}
+                      >
+                        <option value="Requested">Requested</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Result Pending">Result Pending</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Clinical Reason */}
                   {inv.reason && (
                     <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>Reason for Investigation</span>
+                      <span className={styles.fieldLabel}>Indication / Reason:</span>
                       <span className={styles.fieldValue}>{inv.reason}</span>
                     </div>
                   )}
 
+                  {/* Findings */}
                   {inv.findings && (
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>Findings / Interpretation</span>
+                    <div className={styles.fieldHighlight}>
+                      <span className={styles.fieldLabel}>Diagnostic Findings:</span>
                       <span className={styles.fieldValue}>{inv.findings}</span>
                     </div>
                   )}
 
+                  {/* Remarks */}
                   {inv.remarks && (
                     <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>Clinical Remarks</span>
+                      <span className={styles.fieldLabel}>Clinical Notes:</span>
                       <span className={styles.fieldValue}>{inv.remarks}</span>
                     </div>
                   )}
 
-                  {/* Attachments */}
+                  {/* Uploaded Attachments */}
                   {inv.attachments && inv.attachments.length > 0 && (
                     <div className={styles.attachmentsSection}>
                       <div className={styles.attachmentsLabel}>
                         <FileText size={12} />
-                        Uploaded Reports & Scans ({inv.attachments.length})
+                        Uploaded Reports & Radiographs ({inv.attachments.length})
                       </div>
                       <div className={styles.attachmentsGrid}>
                         {inv.attachments.map((att) => {
@@ -537,21 +700,58 @@ export default function InvestigationsSection({
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            {/* Sticky Header */}
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
-                {editingId ? 'Edit Investigation' : 'Order New Investigation'}
-              </h3>
+              <div>
+                <h3 className={styles.modalTitle}>
+                  {editingId ? 'Edit Investigation' : 'Order New Investigation'}
+                </h3>
+                <p className={styles.modalSubtitle}>
+                  Order radiographic imaging, lab tests, and attach diagnostic findings.
+                </p>
+              </div>
               <button
                 type="button"
-                className={styles.actionBtn}
+                className={styles.closeBtn}
                 onClick={() => setIsModalOpen(false)}
+                title="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            {/* Scrollable Form Body with Sticky Footer */}
+            <form onSubmit={handleSubmit} className={styles.modalForm}>
               <div className={styles.modalBody}>
+                {/* Patient Context Indicator or Selector */}
+                {resolvedPatientId ? (
+                  <div className={styles.patientBanner}>
+                    <User size={15} className="text-teal-600" />
+                    <span>
+                      Patient: <strong className="text-slate-800">{resolvedPatientName || 'Assigned Patient'}</strong>
+                      <span className="text-slate-500 text-xs ml-2 font-mono">({resolvedPatientId.slice(0, 10)}...)</span>
+                    </span>
+                  </div>
+                ) : (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Select Patient *</label>
+                    <select
+                      className={styles.select}
+                      value={formData.patient_id}
+                      onChange={(e) => setFormData({ ...formData, patient_id: e.target.value })}
+                      required
+                    >
+                      <option value="">-- Choose Patient --</option>
+                      {patientsList.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} {p.patient_id ? `(${p.patient_id})` : ''} - {p.phone || ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Master Type & Investigation Name */}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Investigation Master Type *</label>
@@ -571,18 +771,19 @@ export default function InvestigationsSection({
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Investigation Name</label>
+                    <label className={styles.formLabel}>Investigation Name *</label>
                     <input
                       type="text"
                       className={styles.input}
                       value={formData.investigation_name}
                       onChange={(e) => setFormData({ ...formData, investigation_name: e.target.value })}
-                      placeholder="e.g. Digital OPG Panoramic"
+                      placeholder="e.g. Digital OPG Panoramic / Bitewing"
                       required
                     />
                   </div>
                 </div>
 
+                {/* Date & Referring Doctor */}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Investigation Date *</label>
@@ -612,15 +813,17 @@ export default function InvestigationsSection({
                   </div>
                 </div>
 
+                {/* Status & Reason */}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Investigation Status</label>
+                    <label className={styles.formLabel}>Investigation Status *</label>
                     <select
                       className={styles.select}
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     >
                       <option value="Requested">Requested</option>
+                      <option value="In Progress">In Progress</option>
                       <option value="Result Pending">Result Pending</option>
                       <option value="Completed">Completed</option>
                       <option value="Cancelled">Cancelled</option>
@@ -634,48 +837,83 @@ export default function InvestigationsSection({
                       className={styles.input}
                       value={formData.reason}
                       onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                      placeholder="e.g. Evaluation of 3rd molar impaction / bone loss"
+                      placeholder="e.g. Evaluation of 3rd molar impaction / apical lesion"
                     />
                   </div>
                 </div>
 
+                {/* Findings / Results */}
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Findings / Results</label>
+                  <label className={styles.formLabel}>Findings / Diagnostic Results</label>
                   <textarea
                     className={styles.textarea}
                     value={formData.findings}
                     onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
-                    placeholder="Enter diagnostic report findings, radiolucencies, observations..."
+                    placeholder="Enter diagnostic report findings, radiolucencies, bone height measurements, observations..."
                     rows={3}
                   />
                 </div>
 
+                {/* Additional Remarks */}
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Additional Remarks</label>
                   <textarea
                     className={styles.textarea}
                     value={formData.remarks}
                     onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                    placeholder="Any patient notes, technique instructions, or follow-up notes..."
+                    placeholder="Technique details, patient notes, or follow-up recommendations..."
                     rows={2}
                   />
                 </div>
 
-                {/* File Upload Section */}
+                {/* Existing Attachments in Edit Mode */}
+                {editingId && editingAttachments.length > 0 && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Attached Reports & Scans ({editingAttachments.length})</label>
+                    <div className={styles.existingAttachmentsGrid}>
+                      {editingAttachments.map((att) => {
+                        const fileUrl = getFullFileUrl(att.file_url || att.file);
+                        const isImg = isImageFile(att);
+                        return (
+                          <div key={att.id} className={styles.attachmentPill}>
+                            {isImg ? (
+                              <img src={att.file_data || fileUrl} alt={att.file_name} className={styles.thumbImg} />
+                            ) : (
+                              <File size={16} color="#dc2626" />
+                            )}
+                            <span className={styles.fileName}>{att.file_name}</span>
+                            <button
+                              type="button"
+                              className={styles.fileBtn}
+                              title="Delete attachment"
+                              onClick={() => handleDeleteAttachment(att.id)}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Scans / Reports Dropzone */}
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Upload Scans / Reports (PDF, JPG, PNG)</label>
+                  <label className={styles.formLabel}>
+                    {editingId ? 'Upload Additional Scans / Reports' : 'Upload Scans / Reports'} (PDF, JPG, PNG)
+                  </label>
                   <div
                     className={styles.dropzone}
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <div className={styles.dropzoneIcon}>
-                      <UploadCloud size={28} />
+                      <UploadCloud size={30} />
                     </div>
                     <div className={styles.dropzoneText}>
-                      Click or drag files here to upload
+                      Click to browse or drag and drop files here
                     </div>
                     <div className={styles.dropzoneSubtext}>
-                      Supports PDF documents, JPG, and PNG radiographic images
+                      Supports PDF documents, JPG, PNG radiographs (Max 25MB each)
                     </div>
                   </div>
                   <input
@@ -687,18 +925,21 @@ export default function InvestigationsSection({
                     onChange={handleFileChange}
                   />
 
+                  {/* Selected Files Preview */}
                   {selectedFiles.length > 0 && (
                     <div className={styles.filePreviewList}>
                       {selectedFiles.map((file, idx) => (
                         <div key={idx} className={styles.previewItem}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {file.type.startsWith('image/') ? <ImageIcon size={14} /> : <File size={14} />}
-                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                            {file.type.startsWith('image/') ? <ImageIcon size={14} className="text-teal-600 flex-shrink-0" /> : <File size={14} className="text-rose-600 flex-shrink-0" />}
+                            <span className="truncate">{file.name}</span>
+                            <span className="text-slate-400 text-[11px] flex-shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
                           </span>
                           <button
                             type="button"
                             className={styles.fileBtn}
                             onClick={() => handleRemoveSelectedFile(idx)}
+                            title="Remove file"
                           >
                             <X size={14} />
                           </button>
@@ -709,10 +950,11 @@ export default function InvestigationsSection({
                 </div>
               </div>
 
+              {/* Sticky Modal Footer */}
               <div className={styles.modalFooter}>
                 <button
                   type="button"
-                  className={styles.tabBtn}
+                  className={styles.btnSecondary}
                   onClick={() => setIsModalOpen(false)}
                   disabled={isSubmitting}
                 >
@@ -720,7 +962,7 @@ export default function InvestigationsSection({
                 </button>
                 <button
                   type="submit"
-                  className={styles.btnAdd}
+                  className={styles.btnPrimary}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? 'Saving...' : editingId ? 'Update Investigation' : 'Save Investigation'}
@@ -735,26 +977,29 @@ export default function InvestigationsSection({
       {previewAttachment && (
         <div className={styles.lightboxModal} onClick={() => setPreviewAttachment(null)}>
           <div className={styles.lightboxHeader} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               {previewAttachment.isImg ? <ImageIcon size={20} /> : <FileText size={20} />}
-              <span style={{ fontWeight: 600 }}>{previewAttachment.file_name}</span>
+              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {previewAttachment.file_name}
+              </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               {previewAttachment.fullUrl && (
                 <a
                   href={previewAttachment.fullUrl}
                   download={previewAttachment.file_name}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                  style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', fontSize: '0.85rem' }}
                 >
-                  <Download size={18} /> Download
+                  <Download size={16} /> Download
                 </a>
               )}
               <button
                 type="button"
                 onClick={() => setPreviewAttachment(null)}
-                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', padding: 4 }}
+                title="Close Lightbox"
               >
                 <X size={24} />
               </button>
@@ -781,4 +1026,3 @@ export default function InvestigationsSection({
     </div>
   );
 }
-
